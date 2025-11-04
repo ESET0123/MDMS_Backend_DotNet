@@ -41,6 +41,7 @@ namespace MDMS_Backend
             builder.Services.AddScoped<ITariffRepository, TariffRepository>();
             builder.Services.AddScoped<ITariffSlabRepository, TariffSlabRepository>();
             builder.Services.AddScoped<IMeterRepository, MeterRepository>();
+            builder.Services.AddScoped<IConsumerRepository, ConsumerRepository>();
 
             builder.Services.AddSwaggerGen();
 

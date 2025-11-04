@@ -16,12 +16,10 @@ namespace MDMS_Backend.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserRepository _userRepo;
-         //private readonly IRoleRepository _roleRepo; // Assuming Role validation might exist elsewhere
 
-        public UserController(IUserRepository userRepo /*, IRoleRepository roleRepo */)
+        public UserController(IUserRepository userRepo )
         {
             _userRepo = userRepo;
-            // _roleRepo = roleRepo;
         }
 
         [HttpGet("AllUsers")]
