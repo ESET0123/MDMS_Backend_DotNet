@@ -170,7 +170,7 @@ namespace MDMS_Backend.Controllers
     }
     public class TariffSlabDTO
     {
-        public int? SlabId { get; set; } // Nullable for creation
+        public int? SlabId { get; set; }
 
         [Required]
         [Range(1, int.MaxValue, ErrorMessage = "TariffId must be a positive integer.")]

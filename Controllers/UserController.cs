@@ -16,7 +16,7 @@ namespace MDMS_Backend.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserRepository _userRepo;
-        // private readonly IRoleRepository _roleRepo; // Assuming Role validation might exist elsewhere
+         //private readonly IRoleRepository _roleRepo; // Assuming Role validation might exist elsewhere
 
         public UserController(IUserRepository userRepo /*, IRoleRepository roleRepo */)
         {
@@ -91,7 +91,7 @@ namespace MDMS_Backend.Controllers
 
             var userNew = new User
             {
-                UserId = model.UserId,
+                UserId = "125",
                 Username = model.Username,
                 Email = model.Email,
                 Phone = model.Phone,
