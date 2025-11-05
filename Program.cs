@@ -16,21 +16,26 @@ namespace MDMS_Backend
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Services.AddControllers();
-
+            var frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL")
+                  ?? "https://localhost:7044"; // fallback if not set
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowUI", policy =>
                 {
-                    policy.WithOrigins("https://localhost:7044") 
+                    policy.WithOrigins(frontendUrl) 
                           .AllowAnyHeader()
                           .AllowAnyMethod();
                 });
             });
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
+
             builder.Services.AddDbContext<MdmsDbContext>(options =>
             {
-                options.UseSqlServer(builder.Configuration.GetConnectionString("ConnectionDB"));
+                options.UseSqlServer(
+                    builder.Configuration.GetConnectionString("ConnectionDB"),
+                    sqlOptions => sqlOptions.EnableRetryOnFailure()
+                    );
             });
             builder.Services.AddScoped<IRoleRepository, RoleRepository>();
             builder.Services.AddScoped<IUserRepository, UserRepository>();
