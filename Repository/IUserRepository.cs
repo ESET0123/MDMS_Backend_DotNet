@@ -8,6 +8,7 @@ namespace MDMS_Backend.Repository
 
         Task<User> GetByUserIdAsync(string userId);
 
+        Task<User> GetUserByUsernameAsync(string username);
         Task AddAsync(User user);
 
         Task UpdateAsync(User user);
