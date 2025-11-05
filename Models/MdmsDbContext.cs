@@ -49,6 +49,7 @@ public partial class MdmsDbContext : DbContext
             optionsBuilder.UseSqlServer("Name=ConnectionStrings:ConnectionDB");
         }
     }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Consumer>(entity =>
