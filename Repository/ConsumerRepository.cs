@@ -42,7 +42,6 @@ namespace MDMS_Backend.Repository
                 return;
             }
 
-            // Update all modifiable fields
             existing.Name = consumer.Name;
             existing.Address = consumer.Address;
             existing.Phone = consumer.Phone;

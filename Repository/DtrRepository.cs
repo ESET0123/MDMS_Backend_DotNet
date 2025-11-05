@@ -40,7 +40,6 @@ namespace MDMS_Backend.Repository
 
         public async Task<Dtr> GetByIdAsync(int id)
         {
-            // Include the related Feeder information
             return await _dbcontext.Dtrs.Include(d => d.Feeder).FirstOrDefaultAsync(n => n.Dtrid == id);
         }
 
@@ -53,7 +52,6 @@ namespace MDMS_Backend.Repository
                 return;
             }
 
-            // Update modifiable fields
             existingDtr.Dtrname = dtr.Dtrname;
             existingDtr.FeederId = dtr.FeederId;
 

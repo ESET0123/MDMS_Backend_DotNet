@@ -17,7 +17,7 @@ namespace MDMS_Backend
 
             builder.Services.AddControllers();
             var frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL")
-                  ?? "https://localhost:7044"; // fallback if not set
+                  ?? "https://localhost:7044";
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowUI", policy =>
@@ -27,7 +27,7 @@ namespace MDMS_Backend
                           .AllowAnyMethod();
                 });
             });
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
             builder.Services.AddEndpointsApiExplorer();
 
             builder.Services.AddDbContext<MdmsDbContext>(options =>
@@ -61,7 +61,6 @@ namespace MDMS_Backend
                     Description = "MDMS Management API with JWT Authentication"
                 });
 
-                //  Add JWT Bearer Authorization definition
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     Name = "Authorization",

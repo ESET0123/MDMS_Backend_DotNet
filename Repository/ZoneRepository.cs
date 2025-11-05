@@ -31,7 +31,6 @@ namespace MDMS_Backend.Repository
 
         public async Task<IEnumerable<Zone>> GetAllAsync()
         {
-            // Optionally include related substations if needed, but keeping it simple like Role example
             return await _dbcontext.Zones.ToListAsync();
         }
 
@@ -49,7 +48,6 @@ namespace MDMS_Backend.Repository
                 return;
             }
 
-            // Update modifiable fields
             existingZone.ZoneName = zone.ZoneName;
 
             await _dbcontext.SaveChangesAsync();

@@ -34,7 +34,6 @@ namespace MDMS_Backend.Repository
 
         public async Task<IEnumerable<Meter>> GetAllAsync()
         {
-            // Include related entities for richer data display in the list view
             return await _dbcontext.Meters
                 .Include(m => m.Consumer)
                 .Include(m => m.Dtr)
@@ -46,7 +45,6 @@ namespace MDMS_Backend.Repository
 
         public async Task<Meter> GetByIdAsync(int id)
         {
-            // Include related entities for detailed view
             return await _dbcontext.Meters
                 .Include(m => m.Consumer)
                 .Include(m => m.Dtr)

@@ -32,10 +32,9 @@ namespace MDMS_Backend.Controllers
                 MeterId = m.MeterId,
                 Ipaddress = m.Ipaddress,
                 Firmware = m.Firmware,
-                InstallDate = m.InstallDate.ToDateTime(TimeOnly.MinValue), // Convert DateOnly back to DateTime for DTO
+                InstallDate = m.InstallDate.ToDateTime(TimeOnly.MinValue),
                 LatestReading = m.LatestReading,
                 ConsumerId = m.ConsumerId,
-                // These assume your related models have a 'Name' property
                 ConsumerName = m.Consumer?.Name ?? "Unknown Consumer",
                 DtrName = m.Dtr?.Dtrname ?? "Unknown DTR",
                 ManufacturerName = m.Manufacturer?.Name ?? "Unknown Manufacturer",
@@ -96,7 +95,7 @@ namespace MDMS_Backend.Controllers
                 ManufacturerId = model.ManufacturerId,
                 Firmware = model.Firmware,
                 TariffId = model.TariffId,
-                InstallDate = DateOnly.FromDateTime(model.InstallDate), // Convert DateTime from DTO to DateOnly for Model
+                InstallDate = DateOnly.FromDateTime(model.InstallDate),
                 StatusId = model.StatusId,
                 LatestReading = model.LatestReading
             };
@@ -165,7 +164,7 @@ namespace MDMS_Backend.Controllers
     }
     public class MeterDTO
     {
-        public int? MeterId { get; set; } // Nullable for creation
+        public int? MeterId { get; set; }
 
         [Required]
         public int ConsumerId { get; set; }
@@ -174,7 +173,7 @@ namespace MDMS_Backend.Controllers
         public int Dtrid { get; set; }
 
         [Required]
-        [StringLength(15, MinimumLength = 7)] // Basic IP validation might use RegEx in reality
+        [StringLength(15, MinimumLength = 7)]
         public string Ipaddress { get; set; } = null!;
 
         public string? Iccid { get; set; }
@@ -190,7 +189,7 @@ namespace MDMS_Backend.Controllers
         public int TariffId { get; set; }
 
         [Required]
-        public DateTime InstallDate { get; set; } // Using DateTime for JSON serialization
+        public DateTime InstallDate { get; set; }
 
         [Required]
         public int StatusId { get; set; }
@@ -200,7 +199,6 @@ namespace MDMS_Backend.Controllers
         public decimal LatestReading { get; set; } = 0;
     }
 
-    // DTO for Read operations
     public class MeterDetailDTO
     {
         public int MeterId { get; set; }
@@ -209,9 +207,8 @@ namespace MDMS_Backend.Controllers
         public DateTime InstallDate { get; set; }
         public decimal LatestReading { get; set; }
 
-        // Related Names for display
         public int ConsumerId { get; set; }
-        public string ConsumerName { get; set; } = null!; // Assuming Consumer model has a Name field
+        public string ConsumerName { get; set; } = null!;
         public string DtrName { get; set; } = null!;
         public string ManufacturerName { get; set; } = null!;
         public string TariffName { get; set; } = null!;

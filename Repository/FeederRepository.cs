@@ -33,13 +33,11 @@ namespace MDMS_Backend.Repository
 
         public async Task<IEnumerable<Feeder>> GetAllAsync()
         {
-            // Include the related Substation for a richer context
             return await _dbcontext.Feeders.Include(f => f.Substation).ToListAsync();
         }
 
         public async Task<Feeder> GetByIdAsync(int id)
         {
-            // Include the related Substation for a richer context
             return await _dbcontext.Feeders.Include(f => f.Substation).FirstOrDefaultAsync(n => n.FeederId == id);
         }
 
@@ -52,7 +50,6 @@ namespace MDMS_Backend.Repository
                 return;
             }
 
-            // Update modifiable fields
             existingFeeder.FeederName = feeder.FeederName;
             existingFeeder.SubstationId = feeder.SubstationId;
 

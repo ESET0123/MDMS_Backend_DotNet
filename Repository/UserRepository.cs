@@ -52,12 +52,9 @@ namespace MDMS_Backend.Repository
                 return;
             }
 
-            // Update all modifiable fields
             existingUser.Username = user.Username;
-            // Note: DisplayName was removed in your latest User model definition
             existingUser.Email = user.Email;
             existingUser.Phone = user.Phone;
-            // Updated property name here:
             existingUser.PasswordHashed = user.PasswordHashed;
             existingUser.RoleId = user.RoleId;
             existingUser.LastLogin = user.LastLogin;

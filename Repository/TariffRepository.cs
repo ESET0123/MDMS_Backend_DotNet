@@ -33,13 +33,11 @@ namespace MDMS_Backend.Repository
 
         public async Task<IEnumerable<Tariff>> GetAllAsync()
         {
-            // We usually don't include Meters or TariffSlabs in a general list view
             return await _dbcontext.Tariffs.ToListAsync();
         }
 
         public async Task<Tariff> GetByIdAsync(int id)
         {
-            // If you need slabs/meters for a detailed view, add .Include() here
             return await _dbcontext.Tariffs.FirstOrDefaultAsync(n => n.TariffId == id);
         }
 
@@ -52,7 +50,6 @@ namespace MDMS_Backend.Repository
                 return;
             }
 
-            // Update modifiable fields
             existingTariff.Name = tariff.Name;
             existingTariff.EffectiveFrom = tariff.EffectiveFrom;
             existingTariff.EffectiveTo = tariff.EffectiveTo;

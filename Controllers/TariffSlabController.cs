@@ -89,7 +89,6 @@ namespace MDMS_Backend.Controllers
         [ProducesResponseType(400)]
         public async Task<ActionResult> CreateTariffSlab([FromBody] TariffSlabDTO model)
         {
-            // A simple business validation
             if (model.ToKwh <= model.FromKwh)
             {
                 ModelState.AddModelError("ToKwh", "ToKwh must be greater than FromKwh.");
@@ -189,7 +188,6 @@ namespace MDMS_Backend.Controllers
         public decimal RatePerKwh { get; set; }
     }
 
-    // DTO for Read operations
     public class TariffSlabDetailDTO
     {
         public int SlabId { get; set; }

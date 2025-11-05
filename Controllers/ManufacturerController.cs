@@ -123,17 +123,15 @@ namespace MDMS_Backend.Controllers
         }
     }
 
-    // DTO for Create/Update operations
     public class ManufacturerDTO
     {
-        public int? ManufacturerId { get; set; } // Nullable for creation
+        public int? ManufacturerId { get; set; } 
 
         [Required]
         [StringLength(100)]
         public string Name { get; set; } = null!;
     }
 
-    // DTO for Read operations
     public class ManufacturerDetailDTO
     {
         public int ManufacturerId { get; set; }

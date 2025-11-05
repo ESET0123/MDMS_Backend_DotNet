@@ -77,13 +77,11 @@ namespace MDMS_Backend.Controllers
         [ProducesResponseType(400)]
         public async Task<ActionResult> CreateUser([FromBody] UserDTO model)
         {
-            // Ensure necessary fields are present for creation
             if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.PasswordString) || !ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            // Password hashing logic
             using var sha256 = SHA256.Create();
             var passwordHashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(model.PasswordString));
 
@@ -109,7 +107,6 @@ namespace MDMS_Backend.Controllers
         [ProducesResponseType(404)]
         public async Task<ActionResult> UpdateUser([FromBody] UserDTO model)
         {
-            // UserId is required for updates
             if (string.IsNullOrEmpty(model.UserId) || !ModelState.IsValid)
             {
                 return BadRequest(ModelState);
@@ -127,11 +124,9 @@ namespace MDMS_Backend.Controllers
             existingUser.RoleId = model.RoleId;
             existingUser.Active = model.Active;
 
-            // Handle password change if provided in the DTO
             if (!string.IsNullOrEmpty(model.PasswordString))
             {
                 using var sha256 = SHA256.Create();
-                // Updated property name here:
                 existingUser.PasswordHashed = sha256.ComputeHash(Encoding.UTF8.GetBytes(model.PasswordString));
             }
 
@@ -162,7 +157,6 @@ namespace MDMS_Backend.Controllers
     }
     public class UserDTO
     {
-        // UserId is required for updates, optional for creation if DB generates it
         public string? UserId { get; set; }
 
         [Required]
@@ -175,7 +169,6 @@ namespace MDMS_Backend.Controllers
         [Phone]
         public string? Phone { get; set; }
 
-        // We use a string for the DTO and handle hashing/conversion in the controller or service layer
         public string? PasswordString { get; set; }
 
         [Required]
@@ -184,7 +177,6 @@ namespace MDMS_Backend.Controllers
         public bool Active { get; set; } = true;
     }
 
-    // A separate DTO for retrieving user details (excluding password completely)
     public class UserDetailDTO
     {
         public int UserNumber { get; set; }
@@ -193,7 +185,7 @@ namespace MDMS_Backend.Controllers
         public string Email { get; set; } = null!;
         public string? Phone { get; set; }
         public int RoleId { get; set; }
-        public string RoleName { get; set; } = null!; // Include relevant role info
+        public string RoleName { get; set; } = null!;
         public DateTime? LastLogin { get; set; }
         public bool Active { get; set; }
     }

@@ -21,7 +21,7 @@ namespace MDMS_Backend.Controllers
 
         [HttpGet("AllZones")]
         [ProducesResponseType(200, Type = typeof(IEnumerable<Zone>))]
-        // [ProducesResponseType(401)]
+        [ProducesResponseType(401)]
         public async Task<ActionResult<IEnumerable<Zone>>> GetZones()
         {
             var zones = await _zoneRepo.GetAllAsync();
@@ -57,12 +57,11 @@ namespace MDMS_Backend.Controllers
             };
 
             await _zoneRepo.AddAsync(zoneNew);
-            // Return 201 Created status
             return CreatedAtAction(nameof(GetZoneById), new { id = zoneNew.ZoneId }, zoneNew);
         }
 
         [HttpPut("Update")]
-        [ProducesResponseType(204)] // No content returned for a successful update
+        [ProducesResponseType(204)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
         public async Task<ActionResult> UpdateZone([FromBody] ZoneDTO model)
@@ -80,7 +79,7 @@ namespace MDMS_Backend.Controllers
 
             var zoneUpdate = new Zone
             {
-                ZoneId = model.ZoneId, // Must include ID for the repo update logic
+                ZoneId = model.ZoneId,
                 ZoneName = model.ZoneName
             };
 
@@ -111,7 +110,6 @@ namespace MDMS_Backend.Controllers
     }
     public class ZoneDTO
     {
-        // RoleId was implicit in RoleDTO for updates, making it explicit here for clarity
         public int ZoneId { get; set; }
 
         [Required]

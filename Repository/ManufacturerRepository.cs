@@ -30,13 +30,11 @@ namespace MDMS_Backend.Repository
 
         public async Task<IEnumerable<Manufacturer>> GetAllAsync()
         {
-            // Include the related Meters collection
             return await _dbcontext.Manufacturers.Include(m => m.Meters).ToListAsync();
         }
 
         public async Task<Manufacturer> GetByIdAsync(int id)
         {
-            // Include the related Meters collection
             return await _dbcontext.Manufacturers
                 .Include(m => m.Meters)
                 .FirstOrDefaultAsync(m => m.ManufacturerId == id);
@@ -52,7 +50,6 @@ namespace MDMS_Backend.Repository
                 return;
             }
 
-            // Update modifiable fields
             existingManufacturer.Name = manufacturer.Name;
 
             await _dbcontext.SaveChangesAsync();

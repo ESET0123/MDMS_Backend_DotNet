@@ -16,8 +16,6 @@ namespace MDMS_Backend.Repository
 
         public async Task<IEnumerable<Status>> GetAllAsync()
         {
-            // Optionally include related entities if needed
-            // Example: Include Consumers and Meters for context
             return await _dbcontext.Statuses
                                    .Include(s => s.Consumers)
                                    .Include(s => s.Meters)
@@ -48,7 +46,6 @@ namespace MDMS_Backend.Repository
             }
 
             existingStatus.Name = status.Name;
-            // Relationships (Consumers, Meters) typically not directly updated here
 
             await _dbcontext.SaveChangesAsync();
         }

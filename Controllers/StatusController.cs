@@ -20,7 +20,6 @@ namespace MDMS_Backend.Controllers
             _statusRepo = statusRepo;
         }
 
-        // GET: api/Status/AllStatuses
         [HttpGet("AllStatuses")]
         [ProducesResponseType(200, Type = typeof(IEnumerable<StatusDetailDTO>))]
         public async Task<ActionResult<IEnumerable<StatusDetailDTO>>> GetStatuses()
@@ -38,7 +37,6 @@ namespace MDMS_Backend.Controllers
             return Ok(dtos);
         }
 
-        // GET: api/Status/{id}
         [HttpGet("{id:int}")]
         [ProducesResponseType(200, Type = typeof(StatusDetailDTO))]
         [ProducesResponseType(404)]
@@ -62,7 +60,6 @@ namespace MDMS_Backend.Controllers
             return Ok(dto);
         }
 
-        // POST: api/Status/Create
         [HttpPost("Create")]
         [ProducesResponseType(201)]
         [ProducesResponseType(400)]
@@ -82,7 +79,6 @@ namespace MDMS_Backend.Controllers
             return CreatedAtAction(nameof(GetStatusById), new { id = newStatus.StatusId }, newStatus);
         }
 
-        // PUT: api/Status/Update
         [HttpPut("Update")]
         [ProducesResponseType(204)]
         [ProducesResponseType(400)]
@@ -110,7 +106,6 @@ namespace MDMS_Backend.Controllers
             return NoContent();
         }
 
-        // DELETE: api/Status/{id}
         [HttpDelete("{id:int}")]
         [ProducesResponseType(204)]
         [ProducesResponseType(400)]
@@ -133,16 +128,14 @@ namespace MDMS_Backend.Controllers
         }
     }
 
-    // DTO for Create/Update operations
     public class StatusDTO
     {
-        public int StatusId { get; set; } // Used for update
+        public int StatusId { get; set; }
 
         [Required]
         public string Name { get; set; } = null!;
     }
 
-    // DTO for Read operations
     public class StatusDetailDTO
     {
         public int StatusId { get; set; }

@@ -95,7 +95,6 @@ namespace MDMS_Backend.Controllers
                 return NotFound();
             }
 
-            // The repository handles the mapping, we just pass the new values from DTO
             var substationUpdate = new Substation
             {
                 SubstationId = model.SubstationId,
@@ -129,7 +128,6 @@ namespace MDMS_Backend.Controllers
         }
     }
 
-    // DTO for Read operations (to avoid returning the full Zone entity/circular references)
     public class SubstationDetailDTO
     {
         public int SubstationId { get; set; }

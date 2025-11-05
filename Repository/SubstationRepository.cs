@@ -34,13 +34,11 @@ namespace MDMS_Backend.Repository
 
         public async Task<IEnumerable<Substation>> GetAllAsync()
         {
-            // Include the related Zone for a richer context
             return await _dbcontext.Substations.Include(s => s.Zone).ToListAsync();
         }
 
         public async Task<Substation> GetByIdAsync(int id)
         {
-            // Include the related Zone for a richer context
             return await _dbcontext.Substations.Include(s => s.Zone).FirstOrDefaultAsync(n => n.SubstationId == id);
         }
 
@@ -53,7 +51,6 @@ namespace MDMS_Backend.Repository
                 return;
             }
 
-            // Update modifiable fields
             existingSubstation.SubstationName = substation.SubstationName;
             existingSubstation.ZoneId = substation.ZoneId;
 
@@ -62,7 +59,7 @@ namespace MDMS_Backend.Repository
     }
     public class SubstationDTO
     {
-        public int SubstationId { get; set; } // Used for updates
+        public int SubstationId { get; set; }
 
         [Required]
         public string SubstationName { get; set; } = null!;

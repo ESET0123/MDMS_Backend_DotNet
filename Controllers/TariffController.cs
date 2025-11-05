@@ -57,7 +57,6 @@ namespace MDMS_Backend.Controllers
             {
                 Name = model.Name,
                 EffectiveFrom = DateOnly.FromDateTime(model.EffectiveFrom),
-                // Handle nullable DateTime to nullable DateOnly conversion
                 EffectiveTo = model.EffectiveTo.HasValue ? DateOnly.FromDateTime(model.EffectiveTo.Value) : (DateOnly?)null,
                 BaseRate = model.BaseRate,
                 TaxRate = model.TaxRate
@@ -73,7 +72,6 @@ namespace MDMS_Backend.Controllers
         [ProducesResponseType(404)]
         public async Task<ActionResult> UpdateTariff([FromBody] TariffDTO model)
         {
-            // Ensure ID is present and valid for an update operation
             if (model == null || model.TariffId == null || model.TariffId <= 0 || !ModelState.IsValid)
             {
                 return BadRequest();

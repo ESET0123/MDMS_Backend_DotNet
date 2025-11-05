@@ -30,7 +30,7 @@ namespace MDMS_Backend.Controllers
                 FeederId = f.FeederId,
                 FeederName = f.FeederName,
                 SubstationId = f.SubstationId,
-                SubstationName = f.Substation?.SubstationName ?? "Unknown Substation" // Map related data
+                SubstationName = f.Substation?.SubstationName ?? "Unknown Substation" 
             });
 
             return Ok(dtos);
@@ -128,10 +128,9 @@ namespace MDMS_Backend.Controllers
             return NoContent();
         }
     }
-    // DTO for Create/Update operations
     public class FeederDTO
     {
-        public int FeederId { get; set; } // Used for updates
+        public int FeederId { get; set; }
 
         [Required]
         public string FeederName { get; set; } = null!;
@@ -141,7 +140,6 @@ namespace MDMS_Backend.Controllers
         public int SubstationId { get; set; }
     }
 
-    // DTO for Read operations (to avoid returning the full Substation entity)
     public class FeederDetailDTO
     {
         public int FeederId { get; set; }

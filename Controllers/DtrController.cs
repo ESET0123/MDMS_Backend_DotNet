@@ -141,7 +141,6 @@ namespace MDMS_Backend.Controllers
         public int FeederId { get; set; }
     }
 
-    // DTO for Read operations
     public class DtrDetailDTO
     {
         public int Dtrid { get; set; }

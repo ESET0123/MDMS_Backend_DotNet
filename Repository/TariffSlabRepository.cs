@@ -34,7 +34,6 @@ namespace MDMS_Backend.Repository
 
         public async Task<IEnumerable<TariffSlab>> GetAllAsync()
         {
-            // Include the related Tariff information
             return await _dbcontext.TariffSlabs.Include(ts => ts.Tariff).ToListAsync();
         }
 
@@ -48,7 +47,6 @@ namespace MDMS_Backend.Repository
 
         public async Task<TariffSlab> GetByIdAsync(int id)
         {
-            // Include the related Tariff information
             return await _dbcontext.TariffSlabs.Include(ts => ts.Tariff).FirstOrDefaultAsync(n => n.SlabId == id);
         }
 
@@ -61,7 +59,6 @@ namespace MDMS_Backend.Repository
                 return;
             }
 
-            // Update modifiable fields
             existingTariffSlab.TariffId = tariffSlab.TariffId;
             existingTariffSlab.FromKwh = tariffSlab.FromKwh;
             existingTariffSlab.ToKwh = tariffSlab.ToKwh;

@@ -145,7 +145,6 @@ namespace MDMS_Backend.Controllers
         }
     }
 
-    // DTO for creating/updating
     public class ConsumerDTO
     {
         public int ConsumerId { get; set; }
@@ -177,7 +176,6 @@ namespace MDMS_Backend.Controllers
         public string? UpdatedBy { get; set; }
     }
 
-    // DTO for retrieving consumer details
     public class ConsumerDetailDTO
     {
         public int ConsumerId { get; set; }
