@@ -65,5 +65,13 @@ namespace MDMS_Backend.Repository
 
             await _dbcontext.SaveChangesAsync();
         }
+
+        public async Task<User> GetUserByUsernameAsync(string username)
+        {
+            return await _dbcontext.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Username == username);
+        }
+
     }
 }

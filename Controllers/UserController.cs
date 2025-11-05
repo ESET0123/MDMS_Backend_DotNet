@@ -93,7 +93,6 @@ namespace MDMS_Backend.Controllers
                 Username = model.Username,
                 Email = model.Email,
                 Phone = model.Phone,
-                // Updated property name here:
                 PasswordHashed = passwordHashBytes,
                 RoleId = model.RoleId,
                 Active = model.Active,
