@@ -14,6 +14,7 @@ namespace MDMS_Backend
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            builder.Configuration.AddUserSecrets<Program>();
 
             builder.Services.AddControllers();
             var frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL")
