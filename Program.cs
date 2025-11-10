@@ -56,6 +56,8 @@ namespace MDMS_Backend
             builder.Services.AddScoped<IConsumerRepository, ConsumerRepository>();
             builder.Services.AddScoped<IManufacturerRepository, ManufacturerRepository>();
             builder.Services.AddScoped<ITodRuleRepository, TodRuleRepository>();
+            builder.Services.AddScoped<IDailyMeterReadingRepository, DailyMeterReadingRepository>();
+            builder.Services.AddScoped<IMonthlyBillRepository, MonthlyBillRepository>();
 
             builder.Services.AddSwaggerGen();
 
