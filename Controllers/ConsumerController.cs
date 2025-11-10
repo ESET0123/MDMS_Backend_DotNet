@@ -192,3 +192,30 @@ namespace MDMS_Backend.Controllers
         public string? UpdatedBy { get; set; }
     }
 }
+
+
+
+
+        //// GET: ConsumerView
+        //public async Task<IActionResult> Index()
+        //{
+        //    var consumers = await _consumerRepo.GetAllAsync();
+
+        //    var dtos = consumers.Select(c => new ConsumerDetailDTO
+        //    {
+        //        ConsumerId = c.ConsumerId,
+        //        Name = c.Name,
+        //        Address = c.Address,
+        //        Phone = c.Phone,
+        //        Email = c.Email,
+        //        StatusId = c.StatusId,
+        //        StatusName = c.Status?.StatusName ?? "N/A",
+        //        MeterCount = c.Meters?.Count ?? 0,
+        //        CreatedAt = c.CreatedAt,
+        //        CreatedBy = c.CreatedBy,
+        //        UpdatedAt = c.UpdatedAt,
+        //        UpdatedBy = c.UpdatedBy
+        //    }).ToList();
+
+        //    return View(dtos);
+        //}

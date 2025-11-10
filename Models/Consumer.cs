@@ -27,5 +27,7 @@ public partial class Consumer
 
     public virtual ICollection<Meter> Meters { get; set; } = new List<Meter>();
 
+    public virtual ICollection<MonthlyBill> MonthlyBills { get; set; } = new List<MonthlyBill>();
+
     public virtual Status Status { get; set; } = null!;
 }

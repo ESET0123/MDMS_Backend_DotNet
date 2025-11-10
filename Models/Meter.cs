@@ -31,6 +31,8 @@ public partial class Meter
 
     public virtual Consumer Consumer { get; set; } = null!;
 
+    public virtual ICollection<DailyMeterReading> DailyMeterReadings { get; set; } = new List<DailyMeterReading>();
+
     public virtual Dtr Dtr { get; set; } = null!;
 
     public virtual Manufacturer Manufacturer { get; set; } = null!;

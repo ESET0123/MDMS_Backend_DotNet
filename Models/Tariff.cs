@@ -20,4 +20,6 @@ public partial class Tariff
     public virtual ICollection<Meter> Meters { get; set; } = new List<Meter>();
 
     public virtual ICollection<TariffSlab> TariffSlabs { get; set; } = new List<TariffSlab>();
+
+    public virtual ICollection<TodRule> TodRules { get; set; } = new List<TodRule>();
 }

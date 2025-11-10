@@ -11,5 +11,6 @@ namespace MDMS_Backend.Repository
         Task AddAsync(Meter meter);
         Task UpdateAsync(Meter meter);
         Task DeleteAsync(int id);
+
     }
 }

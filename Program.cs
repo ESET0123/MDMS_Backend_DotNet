@@ -31,6 +31,11 @@ namespace MDMS_Backend
 
             builder.Services.AddEndpointsApiExplorer();
 
+            //builder.Services.AddDbContext<MdmsDbContext>(options =>
+            //    options.UseSqlServer(builder.Configuration.GetConnectionString("ConnectionDB"),
+            //        sqlOpts => sqlOpts.EnableRetryOnFailure())
+            //);
+
             builder.Services.AddDbContext<MdmsDbContext>(options =>
             {
                 options.UseSqlServer(
@@ -50,6 +55,7 @@ namespace MDMS_Backend
             builder.Services.AddScoped<IStatusRepository, StatusRepository>();
             builder.Services.AddScoped<IConsumerRepository, ConsumerRepository>();
             builder.Services.AddScoped<IManufacturerRepository, ManufacturerRepository>();
+            builder.Services.AddScoped<ITodRuleRepository, TodRuleRepository>();
 
             builder.Services.AddSwaggerGen();
 

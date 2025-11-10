@@ -11,21 +11,37 @@ public partial class MonthlyBill
 
     public int ConsumerId { get; set; }
 
-    public DateOnly BillingMonth { get; set; }
+    public int BillingMonth { get; set; }
 
-    public string ConsumerName { get; set; } = null!;
+    public int BillingYear { get; set; }
 
-    public string TariffName { get; set; } = null!;
+    public DateOnly BillStartDate { get; set; }
 
-    public decimal MonthlyReadingKwh { get; set; }
+    public DateOnly BillEndDate { get; set; }
 
-    public decimal BaseRate { get; set; }
+    public decimal TotalConsumptionKwh { get; set; }
 
-    public decimal TaxRate { get; set; }
+    public decimal BaseAmount { get; set; }
 
-    public decimal TotalBill { get; set; }
+    public decimal TotalSurgeCharges { get; set; }
+
+    public decimal TotalDiscounts { get; set; }
+
+    public decimal NetAmount { get; set; }
+
+    public decimal TaxAmount { get; set; }
+
+    public decimal TotalAmount { get; set; }
 
     public string BillStatus { get; set; } = null!;
+
+    public DateTime? PaidDate { get; set; }
+
+    public DateTime GeneratedAt { get; set; }
+
+    public string GeneratedBy { get; set; } = null!;
+
+    public virtual Consumer Consumer { get; set; } = null!;
 
     public virtual Meter Meter { get; set; } = null!;
 }
