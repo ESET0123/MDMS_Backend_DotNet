@@ -95,6 +95,19 @@ namespace MDMS_Backend.Controllers
             if (meter == null)
                 return BadRequest(new { error = "Meter not found" });
 
+            // Check for existing readings on this date
+            var existingReadings = await _readingRepo.GetByDateAsync(model.ReadingDate);
+            var existingForMeter = existingReadings.Where(r => r.MeterId == model.MeterId).ToList();
+
+            if (existingForMeter.Any())
+            {
+                return BadRequest(new
+                {
+                    error = $"Readings already exist for Meter #{model.MeterId} on {model.ReadingDate}. Please delete existing readings first or choose a different date.",
+                    existingCount = existingForMeter.Count
+                });
+            }
+
             var readings = new List<DailyMeterReading>();
             var errors = new List<string>();
 
@@ -125,7 +138,7 @@ namespace MDMS_Backend.Controllers
                 var dailyReading = new DailyMeterReading
                 {
                     MeterId = model.MeterId,
-                    ReadingDate = model.ReadingDate,
+                    ReadingDate = model.ReadingDate, // FIX: Added missing ReadingDate
                     TodRuleId = reading.TodRuleId,
                     StartTime = TimeOnly.Parse(reading.StartTime),
                     EndTime = TimeOnly.Parse(reading.EndTime),
