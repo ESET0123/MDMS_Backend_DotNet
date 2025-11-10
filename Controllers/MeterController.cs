@@ -15,10 +15,11 @@ namespace MDMS_Backend.Controllers
     public class MeterController : ControllerBase
     {
         private readonly IMeterRepository _meterRepo;
-
-        public MeterController(IMeterRepository meterRepo)
+        private readonly IConsumerRepository _consumerRepo;
+        public MeterController(IMeterRepository meterRepo, IConsumerRepository consumerRepo)
         {
             _meterRepo = meterRepo;
+            _consumerRepo = consumerRepo;
         }
 
         [HttpGet("AllMeters")]
@@ -161,6 +162,189 @@ namespace MDMS_Backend.Controllers
             await _meterRepo.DeleteAsync(id);
             return NoContent();
         }
+        // Add these endpoints to your existing MeterController.cs
+
+        [HttpPost("ValidateBulk")]
+        [ProducesResponseType(200, Type = typeof(BulkValidationResult))]
+        [ProducesResponseType(400)]
+        public async Task<ActionResult<BulkValidationResult>> ValidateBulkMeters([FromBody] List<MeterDTO> meters)
+        {
+            var result = new BulkValidationResult
+            {
+                TotalRecords = meters.Count,
+                ValidRecords = new List<MeterDTO>(),
+                InvalidRecords = new List<ValidationError>()
+            };
+
+            for (int i = 0; i < meters.Count; i++)
+            {
+                var meter = meters[i];
+                var errors = new List<string>();
+
+                // Validate Consumer exists
+                var consumer = await _consumerRepo.GetByIdAsync(meter.ConsumerId);
+                if (consumer == null)
+                {
+                    errors.Add($"Consumer ID {meter.ConsumerId} does not exist");
+                }
+
+                // Validate DTR exists (you'll need to add this method to your repository)
+                // var dtr = await _meterRepo.DtrExistsAsync(meter.Dtrid);
+                // if (!dtr) errors.Add($"DTR ID {meter.Dtrid} does not exist");
+
+                // Validate Manufacturer exists
+                // var manufacturer = await _meterRepo.ManufacturerExistsAsync(meter.ManufacturerId);
+                // if (!manufacturer) errors.Add($"Manufacturer ID {meter.ManufacturerId} does not exist");
+
+                // Validate Tariff exists
+                // var tariff = await _meterRepo.TariffExistsAsync(meter.TariffId);
+                // if (!tariff) errors.Add($"Tariff ID {meter.TariffId} does not exist");
+
+                // Validate Status exists
+                // var status = await _meterRepo.StatusExistsAsync(meter.StatusId);
+                // if (!status) errors.Add($"Status ID {meter.StatusId} does not exist");
+
+                // Validate IP Address format
+                if (!IsValidIpAddress(meter.Ipaddress))
+                {
+                    errors.Add("Invalid IP address format");
+                }
+
+                // Validate Install Date
+                if (meter.InstallDate > DateTime.Now)
+                {
+                    errors.Add("Install date cannot be in the future");
+                }
+
+                // Validate Latest Reading
+                if (meter.LatestReading < 0)
+                {
+                    errors.Add("Latest reading cannot be negative");
+                }
+
+                if (errors.Any())
+                {
+                    result.InvalidRecords.Add(new ValidationError
+                    {
+                        RowNumber = i + 1,
+                        MeterData = meter,
+                        Errors = errors
+                    });
+                }
+                else
+                {
+                    result.ValidRecords.Add(meter);
+                }
+            }
+
+            result.ValidCount = result.ValidRecords.Count;
+            result.InvalidCount = result.InvalidRecords.Count;
+            result.IsValid = result.InvalidCount == 0;
+
+            return Ok(result);
+        }
+
+        [HttpPost("BulkCreate")]
+        [ProducesResponseType(200, Type = typeof(BulkUploadResult))]
+        [ProducesResponseType(400)]
+        public async Task<ActionResult<BulkUploadResult>> BulkCreateMeters([FromBody] List<MeterDTO> meters)
+        {
+            var result = new BulkUploadResult
+            {
+                TotalRecords = meters.Count,
+                SuccessCount = 0,
+                FailedCount = 0,
+                FailedRecords = new List<BulkUploadError>()
+            };
+
+            for (int i = 0; i < meters.Count; i++)
+            {
+                try
+                {
+                    var meter = meters[i];
+                    var meterNew = new Meter
+                    {
+                        ConsumerId = meter.ConsumerId,
+                        Dtrid = meter.Dtrid,
+                        Ipaddress = meter.Ipaddress,
+                        Iccid = meter.Iccid,
+                        Imsi = meter.Imsi,
+                        ManufacturerId = meter.ManufacturerId,
+                        Firmware = meter.Firmware,
+                        TariffId = meter.TariffId,
+                        InstallDate = DateOnly.FromDateTime(meter.InstallDate),
+                        StatusId = meter.StatusId,
+                        LatestReading = meter.LatestReading
+                    };
+
+                    await _meterRepo.AddAsync(meterNew);
+                    result.SuccessCount++;
+                }
+                catch (Exception ex)
+                {
+                    result.FailedCount++;
+                    result.FailedRecords.Add(new BulkUploadError
+                    {
+                        RowNumber = i + 1,
+                        MeterData = meters[i],
+                        ErrorMessage = ex.Message
+                    });
+                }
+            }
+
+            return Ok(result);
+        }
+
+        private bool IsValidIpAddress(string ipAddress)
+        {
+            if (string.IsNullOrWhiteSpace(ipAddress))
+                return false;
+
+            var parts = ipAddress.Split('.');
+            if (parts.Length != 4)
+                return false;
+
+            foreach (var part in parts)
+            {
+                if (!int.TryParse(part, out int num) || num < 0 || num > 255)
+                    return false;
+            }
+
+            return true;
+        }
+    }
+
+    // DTOs for validation and bulk upload
+    public class BulkValidationResult
+    {
+        public int TotalRecords { get; set; }
+        public int ValidCount { get; set; }
+        public int InvalidCount { get; set; }
+        public bool IsValid { get; set; }
+        public List<MeterDTO> ValidRecords { get; set; } = new List<MeterDTO>();
+        public List<ValidationError> InvalidRecords { get; set; } = new List<ValidationError>();
+    }
+
+    public class ValidationError
+    {
+        public int RowNumber { get; set; }
+        public MeterDTO MeterData { get; set; } = null!;
+        public List<string> Errors { get; set; } = new List<string>();
+    }
+
+    public class BulkUploadResult
+    {
+        public int TotalRecords { get; set; }
+        public int SuccessCount { get; set; }
+        public int FailedCount { get; set; }
+        public List<BulkUploadError> FailedRecords { get; set; } = new List<BulkUploadError>();
+    }
+
+    public class BulkUploadError
+    {
+        public int RowNumber { get; set; }
+        public MeterDTO MeterData { get; set; } = null!;
+        public string ErrorMessage { get; set; } = null!;
     }
     public class MeterDTO
     {
