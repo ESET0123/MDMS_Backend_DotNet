@@ -1,145 +1,100 @@
 ﻿using MDMS_Backend.Models;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace MDMS_Backend.Repositories
+namespace MDMS_Backend.Repository
 {
     public class MonthlyBillRepository : IMonthlyBillRepository
     {
-        private readonly MdmsDbContext _context; // Replace with your actual DbContext name
+        private readonly MdmsDbContext _dbcontext;
 
-        public MonthlyBillRepository(MdmsDbContext context)
+        public MonthlyBillRepository(MdmsDbContext dbcontext)
         {
-            _context = context;
+            _dbcontext = dbcontext;
         }
 
         public async Task<IEnumerable<MonthlyBill>> GetAllAsync()
         {
-            return await _context.MonthlyBills
-                .Include(b => b.Consumer)
-                .Include(b => b.Meter)
-                .OrderByDescending(b => b.BillingYear)
-                .ThenByDescending(b => b.BillingMonth)
+            return await _dbcontext.MonthlyBills
+                .Include(m => m.Meter)
+                .Include(m => m.Consumer)
+                .OrderByDescending(m => m.BillingYear)
+                .ThenByDescending(m => m.BillingMonth)
                 .ToListAsync();
         }
 
-        public async Task<MonthlyBill> GetByIdAsync(int billId)
+        public async Task<MonthlyBill> GetByIdAsync(int id)
         {
-            return await _context.MonthlyBills
-                .Include(b => b.Consumer)
-                .Include(b => b.Meter)
-                .FirstOrDefaultAsync(b => b.BillId == billId);
+            return await _dbcontext.MonthlyBills
+                .Include(m => m.Meter)
+                .Include(m => m.Consumer)
+                .FirstOrDefaultAsync(m => m.BillId == id);
         }
 
-        public async Task<IEnumerable<MonthlyBill>> GetByMeterIdAsync(int meterId)
+        public async Task<IEnumerable<MonthlyBill>> GetByConsumerAsync(int consumerId)
         {
-            return await _context.MonthlyBills
-                .Include(b => b.Consumer)
-                .Include(b => b.Meter)
-                .Where(b => b.MeterId == meterId)
-                .OrderByDescending(b => b.BillingYear)
-                .ThenByDescending(b => b.BillingMonth)
+            return await _dbcontext.MonthlyBills
+                .Include(m => m.Meter)
+                .Include(m => m.Consumer)
+                .Where(m => m.ConsumerId == consumerId)
+                .OrderByDescending(m => m.BillingYear)
+                .ThenByDescending(m => m.BillingMonth)
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<MonthlyBill>> GetByConsumerIdAsync(int consumerId)
+        public async Task<MonthlyBill> GetByMeterAndMonthAsync(int meterId, int year, int month)
         {
-            return await _context.MonthlyBills
-                .Include(b => b.Consumer)
-                .Include(b => b.Meter)
-                .Where(b => b.ConsumerId == consumerId)
-                .OrderByDescending(b => b.BillingYear)
-                .ThenByDescending(b => b.BillingMonth)
+            return await _dbcontext.MonthlyBills
+                .Include(m => m.Meter)
+                .Include(m => m.Consumer)
+                .FirstOrDefaultAsync(m => m.MeterId == meterId && m.BillingYear == year && m.BillingMonth == month);
+        }
+
+        public async Task<IEnumerable<MonthlyBill>> GetByMonthAsync(int year, int month)
+        {
+            return await _dbcontext.MonthlyBills
+                .Include(m => m.Meter)
+                .Include(m => m.Consumer)
+                .Where(m => m.BillingYear == year && m.BillingMonth == month)
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<MonthlyBill>> GetByMonthAsync(int month, int year)
+        public async Task<IEnumerable<MonthlyBill>> GetPendingBillsAsync()
         {
-            return await _context.MonthlyBills
-                .Include(b => b.Consumer)
-                .Include(b => b.Meter)
-                .Where(b => b.BillingMonth == month && b.BillingYear == year)
+            return await _dbcontext.MonthlyBills
+                .Include(m => m.Meter)
+                .Include(m => m.Consumer)
+                .Where(m => m.BillStatus == "Pending")
+                .OrderByDescending(m => m.BillingYear)
+                .ThenByDescending(m => m.BillingMonth)
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<MonthlyBill>> GetByMonthOnlyAsync(int month)
+        public async Task AddAsync(MonthlyBill bill)
         {
-            return await _context.MonthlyBills
-                .Include(b => b.Consumer)
-                .Include(b => b.Meter)
-                .Where(b => b.BillingMonth == month)
-                .OrderByDescending(b => b.BillingYear)
-                .ToListAsync();
+            await _dbcontext.MonthlyBills.AddAsync(bill);
+            await _dbcontext.SaveChangesAsync();
         }
 
-        public async Task<IEnumerable<MonthlyBill>> GetByYearAsync(int year)
+        public async Task UpdateAsync(MonthlyBill bill)
         {
-            return await _context.MonthlyBills
-                .Include(b => b.Consumer)
-                .Include(b => b.Meter)
-                .Where(b => b.BillingYear == year)
-                .OrderBy(b => b.BillingMonth)
-                .ToListAsync();
+            var existing = await _dbcontext.MonthlyBills.FirstOrDefaultAsync(m => m.BillId == bill.BillId);
+            if (existing == null) return;
+
+            existing.BillStatus = bill.BillStatus;
+            existing.PaidDate = bill.PaidDate;
+            existing.TotalAmount = bill.TotalAmount;
+
+            await _dbcontext.SaveChangesAsync();
         }
 
-        public async Task<MonthlyBill> CreateAsync(MonthlyBill bill)
+        public async Task DeleteAsync(int id)
         {
-            _context.MonthlyBills.Add(bill);
-            await _context.SaveChangesAsync();
-            return bill;
-        }
-
-        public async Task<MonthlyBill> UpdateAsync(MonthlyBill bill)
-        {
-            _context.Entry(bill).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-            return bill;
-        }
-
-        public async Task<bool> DeleteAsync(int billId)
-        {
-            var bill = await _context.MonthlyBills.FindAsync(billId);
-            if (bill == null)
-                return false;
-
-            _context.MonthlyBills.Remove(bill);
-            await _context.SaveChangesAsync();
-            return true;
-        }
-
-        public async Task<IEnumerable<MonthlyBill>> GetFilteredBillsAsync(
-            int? meterId = null,
-            int? consumerId = null,
-            int? month = null,
-            int? year = null,
-            string status = null)
-        {
-            var query = _context.MonthlyBills
-                .Include(b => b.Consumer)
-                .Include(b => b.Meter)
-                .AsQueryable();
-
-            if (meterId.HasValue)
-                query = query.Where(b => b.MeterId == meterId.Value);
-
-            if (consumerId.HasValue)
-                query = query.Where(b => b.ConsumerId == consumerId.Value);
-
-            if (month.HasValue)
-                query = query.Where(b => b.BillingMonth == month.Value);
-
-            if (year.HasValue)
-                query = query.Where(b => b.BillingYear == year.Value);
-
-            if (!string.IsNullOrEmpty(status))
-                query = query.Where(b => b.BillStatus == status);
-
-            return await query
-                .OrderByDescending(b => b.BillingYear)
-                .ThenByDescending(b => b.BillingMonth)
-                .ToListAsync();
+            var deleting = await _dbcontext.MonthlyBills.FirstOrDefaultAsync(m => m.BillId == id);
+            if (deleting != null)
+            {
+                _dbcontext.MonthlyBills.Remove(deleting);
+                await _dbcontext.SaveChangesAsync();
+            }
         }
     }
 }
