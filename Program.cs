@@ -1,5 +1,6 @@
 
 using MDMS_Backend.Models;
+using MDMS_Backend.Repositories;
 using MDMS_Backend.Repository;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +17,7 @@ namespace MDMS_Backend
             var builder = WebApplication.CreateBuilder(args);
             builder.Configuration.AddUserSecrets<Program>();
 
-            builder.Services.AddControllers();
+            //builder.Services.AddControllers();
             var frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL")
                   ?? "https://localhost:7044";
             builder.Services.AddCors(options =>
@@ -30,6 +31,11 @@ namespace MDMS_Backend
             });
 
             builder.Services.AddEndpointsApiExplorer();
+
+            builder.Services.AddControllers().AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve;
+            });
 
             //builder.Services.AddDbContext<MdmsDbContext>(options =>
             //    options.UseSqlServer(builder.Configuration.GetConnectionString("ConnectionDB"),
