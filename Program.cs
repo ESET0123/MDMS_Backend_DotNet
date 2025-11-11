@@ -1,5 +1,6 @@
 
 using MDMS_Backend.Models;
+using MDMS_Backend.Repositories;
 using MDMS_Backend.Repository;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -43,6 +44,7 @@ namespace MDMS_Backend
                     sqlOptions => sqlOptions.EnableRetryOnFailure()
                     );
             });
+
             builder.Services.AddScoped<IRoleRepository, RoleRepository>();
             builder.Services.AddScoped<IUserRepository, UserRepository>();
             builder.Services.AddScoped<IZoneRepository, ZoneRepository>();

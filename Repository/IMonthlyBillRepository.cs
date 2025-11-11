@@ -1,17 +1,15 @@
-﻿using MDMS_Backend.Models;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+using MDMS_Backend.Models;
 
-namespace MDMS_Backend.Repository
+namespace MDMS_Backend.Repositories
 {
     public interface IMonthlyBillRepository
     {
         Task<IEnumerable<MonthlyBill>> GetAllAsync();
-        Task<MonthlyBill> GetByIdAsync(int id);
-        Task<IEnumerable<MonthlyBill>> GetByConsumerAsync(int consumerId);
-        Task<MonthlyBill> GetByMeterAndMonthAsync(int meterId, int year, int month);
-        Task<IEnumerable<MonthlyBill>> GetByMonthAsync(int year, int month);
-        Task<IEnumerable<MonthlyBill>> GetPendingBillsAsync();
-        Task AddAsync(MonthlyBill bill);
-        Task UpdateAsync(MonthlyBill bill);
-        Task DeleteAsync(int id);
+        Task<MonthlyBill> GetByIdAsync(int billId);
+        Task AddAsync(MonthlyBill monthlyBill);
+        Task UpdateAsync(MonthlyBill monthlyBill);
+        Task DeleteAsync(int billId);
     }
 }

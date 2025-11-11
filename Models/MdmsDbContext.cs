@@ -196,33 +196,24 @@ public partial class MdmsDbContext : DbContext
 
         modelBuilder.Entity<MonthlyBill>(entity =>
         {
-            entity.HasKey(e => e.BillId).HasName("PK__MonthlyB__11F2FC6A2817D668");
+            entity.HasKey(e => e.BillId).HasName("PK__MonthlyB__11F2FC6A24B23C0E");
 
-            entity.Property(e => e.BaseAmount).HasColumnType("decimal(18, 4)");
-            entity.Property(e => e.BillStatus)
-                .HasMaxLength(20)
-                .HasDefaultValue("Pending");
-            entity.Property(e => e.GeneratedAt)
-                .HasDefaultValueSql("(getutcdate())")
-                .HasColumnType("datetime");
-            entity.Property(e => e.GeneratedBy).HasMaxLength(100);
-            entity.Property(e => e.NetAmount).HasColumnType("decimal(18, 4)");
-            entity.Property(e => e.PaidDate).HasColumnType("datetime");
-            entity.Property(e => e.TaxAmount).HasColumnType("decimal(18, 4)");
-            entity.Property(e => e.TotalAmount).HasColumnType("decimal(18, 4)");
-            entity.Property(e => e.TotalConsumptionKwh).HasColumnType("decimal(18, 4)");
-            entity.Property(e => e.TotalDiscounts).HasColumnType("decimal(18, 4)");
-            entity.Property(e => e.TotalSurgeCharges).HasColumnType("decimal(18, 4)");
+            entity.ToTable("MonthlyBill");
+
+            entity.Property(e => e.BillStatus).HasMaxLength(50);
+            entity.Property(e => e.ConsumerId).HasColumnName("ConsumerID");
+            entity.Property(e => e.TotalAmount).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.TotalConsumptionKwh).HasColumnType("decimal(10, 2)");
 
             entity.HasOne(d => d.Consumer).WithMany(p => p.MonthlyBills)
                 .HasForeignKey(d => d.ConsumerId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__MonthlyBi__Consu__607251E5");
+                .HasConstraintName("FK__MonthlyBi__Consu__7B264821");
 
             entity.HasOne(d => d.Meter).WithMany(p => p.MonthlyBills)
                 .HasForeignKey(d => d.MeterId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__MonthlyBi__Meter__5F7E2DAC");
+                .HasConstraintName("FK__MonthlyBi__Meter__7C1A6C5A");
         });
 
         modelBuilder.Entity<Role>(entity =>
