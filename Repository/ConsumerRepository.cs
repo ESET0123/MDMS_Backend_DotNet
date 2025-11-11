@@ -125,7 +125,7 @@ namespace MDMS_Backend.Repository
             existing.StatusId = consumer.StatusId;
 
             // Only update password if provided
-            if (!string.IsNullOrEmpty(consumer.PasswordHash))
+            if (consumer.PasswordHash != null && consumer.PasswordHash.Length > 0)
             {
                 existing.PasswordHash = consumer.PasswordHash;
             }

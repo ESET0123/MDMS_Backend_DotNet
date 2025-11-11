@@ -252,14 +252,14 @@ namespace MDMS_Backend.Controllers
 
             var token = GenerateJwtToken(existingUser.Username, "admin", existingUser.UserId.ToString());
 
-            //return Ok(new
-            //{
-            //    token,
-            //    userType = "admin",
-            //    userId = existingUser.UserId,
-            //    username = existingUser.Username
-            //});
-            return Ok(new { token });
+            return Ok(new
+            {
+                token,
+                userType = "admin",
+                userId = existingUser.UserId,
+                username = existingUser.Username
+            });
+            //return Ok(new { token });
         }
 
         [HttpPost("ConsumerLogin")]
@@ -277,26 +277,30 @@ namespace MDMS_Backend.Controllers
                 return Unauthorized("Account is not active");
 
             // Verify password
-            if (string.IsNullOrEmpty(consumer.PasswordHash))
+            if (consumer.PasswordHash == null && consumer.PasswordHash.Length == 0)
                 return Unauthorized("Password not set for this account");
 
             using var sha256 = SHA256.Create();
-            var enteredPasswordHash = Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(model.Password)));
+            var passwordHashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(model.Password));
+            bool isPasswordValid = passwordHashBytes.SequenceEqual(consumer.PasswordHash);
 
-            if (consumer.PasswordHash != enteredPasswordHash)
+            if (!isPasswordValid)
                 return Unauthorized("Invalid credentials");
+
+            //if (consumer.PasswordHash != passwordHashBytes)
+            //    return Unauthorized($"Invalid credentials {passwordHashBytes}- {consumer.PasswordHash}");
 
             var token = GenerateJwtToken(consumer.Email, "consumer", consumer.ConsumerId.ToString());
 
-            //return Ok(new
-            //{
-            //    token,
-            //    userType = "consumer",
-            //    consumerId = consumer.ConsumerId,
-            //    name = consumer.Name,
-            //    email = consumer.Email
-            //});
-            return Ok(new { token });
+            return Ok(new
+            {
+                token,
+                userType = "consumer",
+                consumerId = consumer.ConsumerId,
+                name = consumer.Name,
+                email = consumer.Email
+            });
+            //return Ok(new { token });
         }
 
         private string GenerateJwtToken(string identifier, string role, string userId)

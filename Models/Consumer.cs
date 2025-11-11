@@ -25,7 +25,7 @@ public partial class Consumer
 
     public string? UpdatedBy { get; set; }
 
-    public string? PasswordHash { get; set; }
+    public byte[] PasswordHash { get; set; } = null!;
 
     public virtual ICollection<Meter> Meters { get; set; } = new List<Meter>();
 

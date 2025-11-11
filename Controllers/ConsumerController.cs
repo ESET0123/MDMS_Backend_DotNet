@@ -197,6 +197,8 @@ using MDMS_Backend.Models;
 using MDMS_Backend.Repository;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace MDMS_Backend.Controllers
 {
@@ -277,6 +279,10 @@ namespace MDMS_Backend.Controllers
                 return BadRequest(ModelState);
             }
 
+            using var sha256 = SHA256.Create();
+            var passwordHashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(model.PasswordHash));
+
+
             var newConsumer = new Consumer
             {
                 Name = model.Name,
@@ -284,7 +290,7 @@ namespace MDMS_Backend.Controllers
                 Phone = model.Phone,
                 Email = model.Email,
                 StatusId = model.StatusId,
-                PasswordHash = model.PasswordHash, // Add password hash
+                PasswordHash = passwordHashBytes, // Add password hash
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = model.CreatedBy,
                 UpdatedAt = null,
@@ -318,10 +324,10 @@ namespace MDMS_Backend.Controllers
             existing.Email = model.Email;
             existing.StatusId = model.StatusId;
 
-            // Only update password if a new one is provided
             if (!string.IsNullOrEmpty(model.PasswordHash))
             {
-                existing.PasswordHash = model.PasswordHash;
+                using var sha256 = SHA256.Create();
+                existing.PasswordHash = sha256.ComputeHash(Encoding.UTF8.GetBytes(model.PasswordHash));
             }
 
             existing.UpdatedAt = DateTime.UtcNow;
