@@ -6,6 +6,7 @@ namespace MDMS_Backend.Repository
     {
         Task<IEnumerable<Consumer>> GetAllAsync();
         Task<Consumer> GetByIdAsync(int consumerId);
+        Task<Consumer> GetByEmailAsync(string email);
         Task AddAsync(Consumer consumer);
         Task UpdateAsync(Consumer consumer);
         Task DeleteAsync(int consumerId);

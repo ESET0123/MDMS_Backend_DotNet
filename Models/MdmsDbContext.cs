@@ -53,14 +53,13 @@ public partial class MdmsDbContext : DbContext
     {
         modelBuilder.Entity<Consumer>(entity =>
         {
-            entity.HasKey(e => e.ConsumerId).HasName("PK__Consumer__63BBE99A38833ADC");
-
             entity.Property(e => e.ConsumerId).HasColumnName("ConsumerID");
             entity.Property(e => e.Address).HasMaxLength(255);
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
             entity.Property(e => e.CreatedBy).HasMaxLength(50);
             entity.Property(e => e.Email).HasMaxLength(100);
             entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.PasswordHash).HasMaxLength(255);
             entity.Property(e => e.Phone).HasMaxLength(20);
             entity.Property(e => e.StatusId).HasColumnName("StatusID");
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
@@ -74,7 +73,7 @@ public partial class MdmsDbContext : DbContext
 
         modelBuilder.Entity<DailyMeterReading>(entity =>
         {
-            entity.HasKey(e => e.ReadingId).HasName("PK__DailyMet__C80F9C4EBE241525");
+            entity.HasKey(e => e.ReadingId).HasName("PK__DailyMet__C80F9C4E283E051C");
 
             entity.Property(e => e.Amount).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.BaseRate).HasColumnType("decimal(18, 4)");
@@ -92,21 +91,21 @@ public partial class MdmsDbContext : DbContext
             entity.HasOne(d => d.Meter).WithMany(p => p.DailyMeterReadings)
                 .HasForeignKey(d => d.MeterId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__DailyMete__Meter__56E8E7AB");
+                .HasConstraintName("FK__DailyMete__Meter__75F77EB0");
 
             entity.HasOne(d => d.TodRule).WithMany(p => p.DailyMeterReadings)
                 .HasForeignKey(d => d.TodRuleId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__DailyMete__TodRu__57DD0BE4");
+                .HasConstraintName("FK__DailyMete__TodRu__76EBA2E9");
         });
 
         modelBuilder.Entity<Dtr>(entity =>
         {
-            entity.HasKey(e => e.Dtrid).HasName("PK__DTRs__F865635F0833BB90");
+            entity.HasKey(e => e.Dtrid).HasName("PK__DTRs__F865635FE5F8DFC9");
 
             entity.ToTable("DTRs");
 
-            entity.HasIndex(e => e.Dtrname, "UQ__DTRs__263F444B31094446").IsUnique();
+            entity.HasIndex(e => e.Dtrname, "UQ__DTRs__263F444B3066C2A3").IsUnique();
 
             entity.Property(e => e.Dtrid).HasColumnName("DTRID");
             entity.Property(e => e.Dtrname)
@@ -122,9 +121,9 @@ public partial class MdmsDbContext : DbContext
 
         modelBuilder.Entity<Feeder>(entity =>
         {
-            entity.HasKey(e => e.FeederId).HasName("PK__Feeders__9B20B0FCF29B5EC1");
+            entity.HasKey(e => e.FeederId).HasName("PK__Feeders__9B20B0FC19EDFCFA");
 
-            entity.HasIndex(e => e.FeederName, "UQ__Feeders__FB00FBD996BC6714").IsUnique();
+            entity.HasIndex(e => e.FeederName, "UQ__Feeders__FB00FBD93ACDEFB6").IsUnique();
 
             entity.Property(e => e.FeederId).HasColumnName("FeederID");
             entity.Property(e => e.FeederName).HasMaxLength(50);
@@ -138,9 +137,9 @@ public partial class MdmsDbContext : DbContext
 
         modelBuilder.Entity<Manufacturer>(entity =>
         {
-            entity.HasKey(e => e.ManufacturerId).HasName("PK__Manufact__357E5CA1C373694F");
+            entity.HasKey(e => e.ManufacturerId).HasName("PK__Manufact__357E5CA192BE643C");
 
-            entity.HasIndex(e => e.Name, "UQ__Manufact__737584F60A81B2BD").IsUnique();
+            entity.HasIndex(e => e.Name, "UQ__Manufact__737584F671E01E7B").IsUnique();
 
             entity.Property(e => e.ManufacturerId).HasColumnName("ManufacturerID");
             entity.Property(e => e.Name).HasMaxLength(50);
@@ -148,7 +147,7 @@ public partial class MdmsDbContext : DbContext
 
         modelBuilder.Entity<Meter>(entity =>
         {
-            entity.HasKey(e => e.MeterId).HasName("PK__Meters__59223B8CEA53528E");
+            entity.HasIndex(e => e.Ipaddress, "UQ_Meters_IPAddress").IsUnique();
 
             entity.Property(e => e.MeterId).HasColumnName("MeterID");
             entity.Property(e => e.ConsumerId).HasColumnName("ConsumerID");
@@ -196,7 +195,7 @@ public partial class MdmsDbContext : DbContext
 
         modelBuilder.Entity<MonthlyBill>(entity =>
         {
-            entity.HasKey(e => e.BillId).HasName("PK__MonthlyB__11F2FC6A24B23C0E");
+            entity.HasKey(e => e.BillId).HasName("PK__MonthlyB__11F2FC6A3E59B86A");
 
             entity.ToTable("MonthlyBill");
 
@@ -208,21 +207,21 @@ public partial class MdmsDbContext : DbContext
             entity.HasOne(d => d.Consumer).WithMany(p => p.MonthlyBills)
                 .HasForeignKey(d => d.ConsumerId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__MonthlyBi__Consu__7B264821");
+                .HasConstraintName("FK__MonthlyBi__Consu__79C80F94");
 
             entity.HasOne(d => d.Meter).WithMany(p => p.MonthlyBills)
                 .HasForeignKey(d => d.MeterId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__MonthlyBi__Meter__7C1A6C5A");
+                .HasConstraintName("FK__MonthlyBi__Meter__7ABC33CD");
         });
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.RoleId).HasName("PK__Roles__8AFACE3A48671FF2");
+            entity.HasKey(e => e.RoleId).HasName("PK__Roles__8AFACE3A718393D7");
 
-            entity.HasIndex(e => e.RoleName, "UQ__Roles__8A2B616065804CAF").IsUnique();
+            entity.HasIndex(e => e.RoleName, "UQ__Roles__8A2B61600B2BD2E6").IsUnique();
 
-            entity.HasIndex(e => e.Abbreviation, "UQ__Roles__9C41170E8B3F7400").IsUnique();
+            entity.HasIndex(e => e.Abbreviation, "UQ__Roles__9C41170EF02D829A").IsUnique();
 
             entity.Property(e => e.RoleId).HasColumnName("RoleID");
             entity.Property(e => e.Abbreviation).HasMaxLength(3);
@@ -231,9 +230,9 @@ public partial class MdmsDbContext : DbContext
 
         modelBuilder.Entity<Status>(entity =>
         {
-            entity.HasKey(e => e.StatusId).HasName("PK__Statuses__C8EE2043C9A4B36E");
+            entity.HasKey(e => e.StatusId).HasName("PK__Statuses__C8EE204384E4C2F7");
 
-            entity.HasIndex(e => e.Name, "UQ__Statuses__737584F64E35F77A").IsUnique();
+            entity.HasIndex(e => e.Name, "UQ__Statuses__737584F68BE57273").IsUnique();
 
             entity.Property(e => e.StatusId).HasColumnName("StatusID");
             entity.Property(e => e.Name).HasMaxLength(20);
@@ -241,9 +240,9 @@ public partial class MdmsDbContext : DbContext
 
         modelBuilder.Entity<Substation>(entity =>
         {
-            entity.HasKey(e => e.SubstationId).HasName("PK__Substati__BB479C6F57ACF55C");
+            entity.HasKey(e => e.SubstationId).HasName("PK__Substati__BB479C6F1E7A7BFD");
 
-            entity.HasIndex(e => e.SubstationName, "UQ__Substati__32F751591DBB4E7E").IsUnique();
+            entity.HasIndex(e => e.SubstationName, "UQ__Substati__32F751594191F291").IsUnique();
 
             entity.Property(e => e.SubstationId).HasColumnName("SubstationID");
             entity.Property(e => e.SubstationName).HasMaxLength(50);
@@ -257,7 +256,7 @@ public partial class MdmsDbContext : DbContext
 
         modelBuilder.Entity<Tariff>(entity =>
         {
-            entity.HasKey(e => e.TariffId).HasName("PK__Tariffs__EBAF9D932131DEA3");
+            entity.HasKey(e => e.TariffId).HasName("PK__Tariffs__EBAF9D9319F0AA47");
 
             entity.Property(e => e.TariffId).HasColumnName("TariffID");
             entity.Property(e => e.BaseRate).HasColumnType("decimal(10, 2)");
@@ -267,7 +266,7 @@ public partial class MdmsDbContext : DbContext
 
         modelBuilder.Entity<TariffSlab>(entity =>
         {
-            entity.HasKey(e => e.SlabId).HasName("PK__TariffSl__D6169901A3122B22");
+            entity.HasKey(e => e.SlabId);
 
             entity.Property(e => e.SlabId).HasColumnName("SlabID");
             entity.Property(e => e.FromKwh)
@@ -289,7 +288,7 @@ public partial class MdmsDbContext : DbContext
 
         modelBuilder.Entity<TodRule>(entity =>
         {
-            entity.HasKey(e => e.TodRuleId).HasName("PK__TodRules__5A5E32F74245F87B");
+            entity.HasKey(e => e.TodRuleId).HasName("PK__TodRules__5A5E32F7E81D3D65");
 
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getutcdate())")
@@ -305,27 +304,28 @@ public partial class MdmsDbContext : DbContext
             entity.HasOne(d => d.Tariff).WithMany(p => p.TodRules)
                 .HasForeignKey(d => d.TariffId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__TodRules__Tariff__531856C7");
+                .HasConstraintName("FK__TodRules__Tariff__7226EDCC");
         });
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.UserNumber);
+            entity.ToTable(tb => tb.HasTrigger("trg_GenerateUserID"));
 
-            entity.ToTable(tb => tb.HasTrigger("trg_GenerateUserIDs"));
+            entity.HasIndex(e => e.UserNumber, "UQ_UserNumber").IsUnique();
 
-            entity.HasIndex(e => e.UserId, "UQ_UserID").IsUnique();
+            entity.HasIndex(e => e.UserId, "UQ__Users__1788CCAD6A622B69").IsUnique();
 
-            entity.HasIndex(e => e.Email, "UQ__Users__A9D10534B234CE11").IsUnique();
+            entity.HasIndex(e => e.Email, "UQ__Users__A9D10534615B5DA4").IsUnique();
 
+            entity.Property(e => e.UserId)
+                .HasMaxLength(10)
+                .HasColumnName("UserID");
             entity.Property(e => e.Email).HasMaxLength(100);
             entity.Property(e => e.LastLogin).HasColumnType("datetime");
             entity.Property(e => e.PasswordHashed).HasMaxLength(256);
             entity.Property(e => e.Phone).HasMaxLength(15);
             entity.Property(e => e.RoleId).HasColumnName("RoleID");
-            entity.Property(e => e.UserId)
-                .HasMaxLength(10)
-                .HasColumnName("UserID");
+            entity.Property(e => e.UserNumber).ValueGeneratedOnAdd();
             entity.Property(e => e.Username).HasMaxLength(50);
 
             entity.HasOne(d => d.Role).WithMany(p => p.Users)
@@ -336,9 +336,9 @@ public partial class MdmsDbContext : DbContext
 
         modelBuilder.Entity<Zone>(entity =>
         {
-            entity.HasKey(e => e.ZoneId).HasName("PK__Zones__601667958DA976F4");
+            entity.HasKey(e => e.ZoneId).HasName("PK__Zones__601667956797C81F");
 
-            entity.HasIndex(e => e.ZoneName, "UQ__Zones__EE0DD1685F78757F").IsUnique();
+            entity.HasIndex(e => e.ZoneName, "UQ__Zones__EE0DD168BE7110DC").IsUnique();
 
             entity.Property(e => e.ZoneId).HasColumnName("ZoneID");
             entity.Property(e => e.ZoneName).HasMaxLength(50);
