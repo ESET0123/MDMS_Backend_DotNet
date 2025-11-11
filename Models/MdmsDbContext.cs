@@ -195,24 +195,26 @@ public partial class MdmsDbContext : DbContext
 
         modelBuilder.Entity<MonthlyBill>(entity =>
         {
-            entity.HasKey(e => e.BillId).HasName("PK__MonthlyB__11F2FC6A3E59B86A");
+            entity.HasKey(e => e.BillId).HasName("PK__MonthlyB__11F2FC6A10ADA28C");
 
             entity.ToTable("MonthlyBill");
 
             entity.Property(e => e.BillStatus).HasMaxLength(50);
-            entity.Property(e => e.ConsumerId).HasColumnName("ConsumerID");
-            entity.Property(e => e.TotalAmount).HasColumnType("decimal(10, 2)");
-            entity.Property(e => e.TotalConsumptionKwh).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getutcdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.TotalAmount).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.TotalConsumptionKwh).HasColumnType("decimal(18, 4)");
 
             entity.HasOne(d => d.Consumer).WithMany(p => p.MonthlyBills)
                 .HasForeignKey(d => d.ConsumerId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__MonthlyBi__Consu__79C80F94");
+                .HasConstraintName("FK__MonthlyBi__Consu__2882FE7D");
 
             entity.HasOne(d => d.Meter).WithMany(p => p.MonthlyBills)
                 .HasForeignKey(d => d.MeterId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__MonthlyBi__Meter__7ABC33CD");
+                .HasConstraintName("FK__MonthlyBi__Meter__297722B6");
         });
 
         modelBuilder.Entity<Role>(entity =>

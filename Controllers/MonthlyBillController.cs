@@ -215,177 +215,208 @@
 //    }
 //}
 
-// MonthlyBillController.cs
-//using MDMS_Backend.Models;
-//using MDMS_Backend.Repositories;
-//using MDMS_Backend.Repository;
-//using Microsoft.AspNetCore.Mvc;
-//using System.ComponentModel.DataAnnotations;
+using MDMS_Backend.Models;
+using MDMS_Backend.Repositories;
+using MDMS_Backend.Repository;
+using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
+using System.Threading.Tasks;
 
-//namespace MDMS_Backend.Controllers
-//{
-//	[Route("api/[controller]")]
-//	[ApiController]
-//	public class MonthlyBillController : ControllerBase
-//	{
-//		private readonly IMonthlyBillRepository _billRepo;
+namespace MDMS_Backend.Controllers
+{
+	[Route("api/[controller]")]
+	[ApiController]
+	public class MonthlyBillController : ControllerBase
+	{
+		private readonly IMonthlyBillRepository _monthlyBillRepo;
+		private readonly IDailyMeterReadingRepository _dailyReadingRepo;
 
-//		public MonthlyBillController(IMonthlyBillRepository billRepo)
-//		{
-//			_billRepo = billRepo;
-//		}
+		public MonthlyBillController(
+			IMonthlyBillRepository monthlyBillRepo,
+			IDailyMeterReadingRepository dailyReadingRepo)
+		{
+			_monthlyBillRepo = monthlyBillRepo;
+			_dailyReadingRepo = dailyReadingRepo;
+		}
 
-//		[HttpGet("AllMonthlyBills")]
-//		[ProducesResponseType(200, Type = typeof(IEnumerable<MonthlyBillDTO>))]
-//		public async Task<ActionResult<IEnumerable<MonthlyBillDTO>>> GetAllBills()
-//		{
-//			var bills = await _billRepo.GetAllAsync();
+		// Existing methods...
 
-//			var dtos = bills.Select(b => new MonthlyBillDTO
-//			{
-//				BillId = b.BillId,
-//				MeterId = b.MeterId,
-//				ConsumerId = b.ConsumerId,
-//				ConsumerName = b.Consumer?.Name ?? "N/A",
-//				BillingDate = b.BillingDate,
-//				TotalConsumptionKwh = b.TotalConsumptionKwh,
-//				TotalAmount = b.TotalAmount,
-//				BillStatus = b.BillStatus
-//			});
+		[HttpPost("GenerateBills")]
+		[ProducesResponseType(200)]
+		[ProducesResponseType(400)]
+		public async Task<ActionResult<BillGenerationResult>> GenerateMonthlyBills([FromBody] BillGenerationRequest request)
+		{
+			if (request == null || !ModelState.IsValid)
+			{
+				return BadRequest(ModelState);
+			}
 
-//			return Ok(dtos);
-//		}
+			if (request.Month < 1 || request.Month > 12)
+			{
+				return BadRequest("Month must be between 1 and 12");
+			}
 
-//		[HttpPost("GenerateMonthlyBills")]
-//		[ProducesResponseType(200)]
-//		[ProducesResponseType(400)]
-//		public async Task<ActionResult> GenerateMonthlyBills([FromBody] GenerateBillRequest request)
-//		{
-//			if (!ModelState.IsValid)
-//				return BadRequest(ModelState);
+			if (request.Year < 2000 || request.Year > 2100)
+			{
+				return BadRequest("Year must be between 2000 and 2100");
+			}
 
-//			if (request.Month < 1 || request.Month > 12)
-//				return BadRequest(new { error = "Month must be between 1 and 12" });
+			try
+			{
+				var billsGenerated = await _monthlyBillRepo.GenerateMonthlyBillsAsync(request.Month, request.Year);
 
-//			if (request.Year < 2000 || request.Year > 2100)
-//				return BadRequest(new { error = "Year must be between 2000 and 2100" });
+				var result = new BillGenerationResult
+				{
+					Month = request.Month,
+					Year = request.Year,
+					BillsGenerated = billsGenerated,
+					Message = $"{billsGenerated} bills generated successfully for {request.Month}/{request.Year}"
+				};
 
-//			try
-//			{
-//				var billsGenerated = await _billRepo.GenerateMonthlyBillsAsync(request.Month, request.Year);
+				return Ok(result);
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, $"Error generating bills: {ex.Message}");
+			}
+		}
 
-//				return Ok(new
-//				{
-//					message = $"Successfully generated {billsGenerated} monthly bills for {request.Month}/{request.Year}",
-//					billsGenerated = billsGenerated
-//				});
-//			}
-//			catch (Exception ex)
-//			{
-//				return BadRequest(new { error = $"Failed to generate bills: {ex.Message}" });
-//			}
-//		}
+		[HttpGet("ByMeterAndMonth/{meterId}/{month}/{year}")]
+		[ProducesResponseType(200, Type = typeof(IEnumerable<MonthlyBillDetailDTO>))]
+		public async Task<ActionResult<IEnumerable<MonthlyBillDetailDTO>>> GetBillsByMeterAndMonth(int meterId, int month, int year)
+		{
+			var bills = await _monthlyBillRepo.GetByMeterAndMonthAsync(meterId, month, year);
 
-//		[HttpGet("ByMeterAndMonth")]
-//		[ProducesResponseType(200, Type = typeof(IEnumerable<MonthlyBillDTO>))]
-//		public async Task<ActionResult<IEnumerable<MonthlyBillDTO>>> GetByMeterAndMonth(
-//			[FromQuery] int meterId,
-//			[FromQuery] int month,
-//			[FromQuery] int year)
-//		{
-//			var bills = await _billRepo.GetByMeterAndMonthAsync(meterId, month, year);
+			var dtos = bills.Select(b => new MonthlyBillDetailDTO
+			{
+				BillId = b.BillId,
+				ConsumerId = b.ConsumerId,
+				ConsumerName = b.Consumer?.Name ?? "N/A",
+				MeterId = b.MeterId,
+				BillingDate = b.BillingDate,
+				TotalConsumptionKwh = b.TotalConsumptionKwh,
+				TotalAmount = b.TotalAmount,
+				BillStatus = b.BillStatus,
+				//BillingMonth = b.BillingMonth,
+				//BillingYear = b.BillingYear
+			});
 
-//			var dtos = bills.Select(b => new MonthlyBillDTO
-//			{
-//				BillId = b.BillId,
-//				MeterId = b.MeterId,
-//				ConsumerId = b.ConsumerId,
-//				ConsumerName = b.Consumer?.Name ?? "N/A",
-//				BillingDate = b.BillingDate,
-//				TotalConsumptionKwh = b.TotalConsumptionKwh,
-//				TotalAmount = b.TotalAmount,
-//				BillStatus = b.BillStatus
-//			});
+			return Ok(dtos);
+		}
 
-//			return Ok(dtos);
-//		}
+		[HttpGet("ByConsumer/{consumerId}")]
+		[ProducesResponseType(200, Type = typeof(IEnumerable<MonthlyBillDetailDTO>))]
+		public async Task<ActionResult<IEnumerable<MonthlyBillDetailDTO>>> GetBillsByConsumer(int consumerId)
+		{
+			var bills = await _monthlyBillRepo.GetByConsumerAsync(consumerId);
 
-//		[HttpGet("BillDetails/{billId}")]
-//		[ProducesResponseType(200, Type = typeof(MonthlyBillDetailDTO))]
-//		[ProducesResponseType(404)]
-//		public async Task<ActionResult<MonthlyBillDetailDTO>> GetBillDetails(int billId)
-//		{
-//			var billDetails = await _billRepo.GetBillDetailsAsync(billId);
-//			var billDetail = billDetails.FirstOrDefault();
+			var dtos = bills.Select(b => new MonthlyBillDetailDTO
+			{
+				BillId = b.BillId,
+				ConsumerId = b.ConsumerId,
+				ConsumerName = b.Consumer?.Name ?? "N/A",
+				MeterId = b.MeterId,
+				BillingDate = b.BillingDate,
+				TotalConsumptionKwh = b.TotalConsumptionKwh,
+				TotalAmount = b.TotalAmount,
+				BillStatus = b.BillStatus,
+				//BillingMonth = b.BillingMonth,
+				//BillingYear = b.BillingYear
+			});
 
-//			if (billDetail == null)
-//				return NotFound();
+			return Ok(dtos);
+		}
 
-//			return Ok(billDetail);
-//		}
+		[HttpGet("CheckBillsExist/{month}/{year}")]
+		[ProducesResponseType(200, Type = typeof(bool))]
+		public async Task<ActionResult<bool>> CheckBillsExist(int month, int year)
+		{
+			var exists = await _monthlyBillRepo.CheckBillsExistForMonthAsync(month, year);
+			return Ok(exists);
+		}
 
-//		[HttpPost("Create")]
-//		[ProducesResponseType(201)]
-//		[ProducesResponseType(400)]
-//		public async Task<ActionResult> CreateBill([FromBody] MonthlyBill bill)
-//		{
-//			if (!ModelState.IsValid)
-//				return BadRequest(ModelState);
+		[HttpGet("DailyReadings/{meterId}/{month}/{year}")]
+		[ProducesResponseType(200, Type = typeof(IEnumerable<DailyReadingDTO>))]
+		public async Task<ActionResult<IEnumerable<DailyReadingDTO>>> GetDailyReadingsForMonth(int meterId, int month, int year)
+		{
+			var startDate = new DateOnly(year, month, 1);
+			var endDate = startDate.AddMonths(1).AddDays(-1);
 
-//			await _billRepo.AddAsync(bill);
-//			return Ok(new { message = "Bill created successfully", billId = bill.BillId });
-//		}
+			var readings = await _dailyReadingRepo.GetByMeterAndDateRangeAsync(meterId, startDate, endDate);
 
-//		[HttpPut("Update")]
-//		[ProducesResponseType(200)]
-//		[ProducesResponseType(400)]
-//		public async Task<ActionResult> UpdateBill([FromBody] MonthlyBill bill)
-//		{
-//			if (!ModelState.IsValid)
-//				return BadRequest(ModelState);
+			var dtos = readings.Select(r => new DailyReadingDTO
+			{
+				ReadingId = r.ReadingId,
+				MeterId = r.MeterId,
+				ReadingDate = r.ReadingDate,
+				TodRuleId = r.TodRuleId,
+				TodRuleName = r.TodRule?.RuleName ?? "N/A",
+				StartTime = r.StartTime,
+				EndTime = r.EndTime,
+				PreviousReading = r.PreviousReading,
+				CurrentReading = r.CurrentReading,
+				ConsumptionKwh = r.ConsumptionKwh,
+				BaseRate = r.BaseRate,
+				SurgeChargePercent = r.SurgeChargePercent,
+				DiscountPercent = r.DiscountPercent,
+				EffectiveRate = r.EffectiveRate,
+				Amount = r.Amount
+			});
 
-//			var existing = await _billRepo.GetByIdAsync(bill.BillId);
-//			if (existing == null)
-//				return NotFound();
+			return Ok(dtos);
+		}
+	}
 
-//			await _billRepo.UpdateAsync(bill);
-//			return Ok(new { message = "Bill updated successfully" });
-//		}
+	public class BillGenerationRequest
+	{
+		[Required]
+		[Range(1, 12)]
+		public int Month { get; set; }
 
-//		[HttpDelete("{id}")]
-//		[ProducesResponseType(204)]
-//		[ProducesResponseType(404)]
-//		public async Task<ActionResult> DeleteBill(int id)
-//		{
-//			var existing = await _billRepo.GetByIdAsync(id);
-//			if (existing == null)
-//				return NotFound();
+		[Required]
+		[Range(2000, 2100)]
+		public int Year { get; set; }
+	}
 
-//			await _billRepo.DeleteAsync(id);
-//			return NoContent();
-//		}
-//	}
+	public class BillGenerationResult
+	{
+		public int Month { get; set; }
+		public int Year { get; set; }
+		public int BillsGenerated { get; set; }
+		public string Message { get; set; } = null!;
+	}
 
-//	public class MonthlyBillDTO
-//	{
-//		public int BillId { get; set; }
-//		public int MeterId { get; set; }
-//		public int ConsumerId { get; set; }
-//		public string ConsumerName { get; set; }
-//		public DateOnly BillingDate { get; set; }
-//		public decimal TotalConsumptionKwh { get; set; }
-//		public decimal TotalAmount { get; set; }
-//		public string BillStatus { get; set; }
-//	}
+	public class DailyReadingDTO
+	{
+		public int ReadingId { get; set; }
+		public int MeterId { get; set; }
+		public DateOnly ReadingDate { get; set; }
+		public int TodRuleId { get; set; }
+		public string TodRuleName { get; set; } = null!;
+		public TimeOnly StartTime { get; set; }
+		public TimeOnly EndTime { get; set; }
+		public decimal PreviousReading { get; set; }
+		public decimal CurrentReading { get; set; }
+		public decimal ConsumptionKwh { get; set; }
+		public decimal BaseRate { get; set; }
+		public decimal SurgeChargePercent { get; set; }
+		public decimal DiscountPercent { get; set; }
+		public decimal EffectiveRate { get; set; }
+		public decimal Amount { get; set; }
+	}
 
-//	public class GenerateBillRequest
-//	{
-//		[Required]
-//		[Range(1, 12, ErrorMessage = "Month must be between 1 and 12")]
-//		public int Month { get; set; }
-
-//		[Required]
-//		[Range(2000, 2100, ErrorMessage = "Year must be between 2000 and 2100")]
-//		public int Year { get; set; }
-//	}
-//}
+	// Update existing DTOs
+	public class MonthlyBillDetailDTO
+	{
+		public int BillId { get; set; }
+		public int ConsumerId { get; set; }
+		public string ConsumerName { get; set; } = null!;
+		public int MeterId { get; set; }
+		public DateOnly BillingDate { get; set; }
+		public decimal TotalConsumptionKwh { get; set; }
+		public decimal TotalAmount { get; set; }
+		public string BillStatus { get; set; } = null!;
+		public int BillingMonth { get; set; }
+		public int BillingYear { get; set; }
+	}
+}

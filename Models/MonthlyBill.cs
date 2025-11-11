@@ -19,6 +19,12 @@ public partial class MonthlyBill
 
     public string BillStatus { get; set; } = null!;
 
+    public int BillingMonth { get; set; }
+
+    public int BillingYear { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
     public virtual Consumer Consumer { get; set; } = null!;
 
     public virtual Meter Meter { get; set; } = null!;
