@@ -10,5 +10,7 @@ namespace MDMS_Backend.Repository
         Task AddAsync(Consumer consumer);
         Task UpdateAsync(Consumer consumer);
         Task DeleteAsync(int consumerId);
+        Task<IEnumerable<int>> GetMeterIdsByConsumerIdAsync(int consumerId);
+
     }
 }

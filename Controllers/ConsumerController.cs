@@ -75,6 +75,28 @@ namespace MDMS_Backend.Controllers
             return Ok(dto);
         }
 
+        [HttpGet("{consumerId}/Meters")]
+        [ProducesResponseType(200, Type = typeof(IEnumerable<int>))]
+        [ProducesResponseType(404)]
+        public async Task<ActionResult<IEnumerable<int>>> GetMeterIdsByConsumerId(int consumerId)
+        {
+            var consumer = await _consumerRepo.GetByIdAsync(consumerId);
+            if (consumer == null)
+            {
+                return NotFound($"Consumer with ID {consumerId} not found.");
+            }
+
+            var meterIds = await _consumerRepo.GetMeterIdsByConsumerIdAsync(consumerId);
+
+            if (!meterIds.Any())
+            {
+                return Ok(new List<int>());
+            }
+
+            return Ok(meterIds);
+        }
+
+
         [HttpPost("Create")]
         [ProducesResponseType(201)]
         [ProducesResponseType(400)]
