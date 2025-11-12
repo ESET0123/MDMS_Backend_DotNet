@@ -1,6 +1,7 @@
 ﻿using MDMS_Backend.Models;
 using MDMS_Backend.Repositories;
 using MDMS_Backend.Repository;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
@@ -9,7 +10,9 @@ namespace MDMS_Backend.Controllers
 {
 	[Route("api/[controller]")]
 	[ApiController]
-	public class MonthlyBillController : ControllerBase
+    [Authorize]
+
+    public class MonthlyBillController : ControllerBase
 	{
 		private readonly IMonthlyBillRepository _monthlyBillRepo;
 		private readonly IDailyMeterReadingRepository _dailyReadingRepo;

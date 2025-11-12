@@ -1,5 +1,6 @@
 ﻿using MDMS_Backend.Models;
 using MDMS_Backend.Repository;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 
@@ -7,6 +8,8 @@ namespace MDMS_Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
+
     public class MeterController : ControllerBase
     {
         private readonly IMeterRepository _meterRepo;
@@ -24,7 +27,7 @@ namespace MDMS_Backend.Controllers
             var dtos = meters.Select(m => new MeterDetailDTO
             {
                 MeterId = m.MeterId,
-                Dtrid = m.Dtrid, // ADD THIS LINE
+                Dtrid = m.Dtrid,
                 Ipaddress = m.Ipaddress,
                 Firmware = m.Firmware,
                 InstallDate = m.InstallDate.ToDateTime(TimeOnly.MinValue),
@@ -56,7 +59,7 @@ namespace MDMS_Backend.Controllers
             var dto = new MeterDetailDTO
             {
                 MeterId = m.MeterId,
-                Dtrid = m.Dtrid, // ADD THIS LINE
+                Dtrid = m.Dtrid,
                 Ipaddress = m.Ipaddress,
                 Firmware = m.Firmware,
                 InstallDate = m.InstallDate.ToDateTime(TimeOnly.MinValue),

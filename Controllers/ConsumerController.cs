@@ -1,5 +1,6 @@
 ﻿using MDMS_Backend.Models;
 using MDMS_Backend.Repository;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Cryptography;
@@ -9,7 +10,7 @@ namespace MDMS_Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    // [Authorize]
+     [Authorize]
     public class ConsumerController : ControllerBase
     {
         private readonly IConsumerRepository _consumerRepo;

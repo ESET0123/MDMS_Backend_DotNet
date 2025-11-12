@@ -1,5 +1,6 @@
 ﻿using MDMS_Backend.Models;
 using MDMS_Backend.Repository;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -10,7 +11,7 @@ namespace MDMS_Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    // [Authorize] 
+    [Authorize]
     public class DtrController : ControllerBase
     {
         private readonly IDtrRepository _dtrRepo;

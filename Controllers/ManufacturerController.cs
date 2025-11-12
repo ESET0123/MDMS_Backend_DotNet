@@ -1,5 +1,6 @@
 ﻿using MDMS_Backend.Models;
 using MDMS_Backend.Repository;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 
@@ -7,7 +8,7 @@ namespace MDMS_Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    // [Authorize]
+    [Authorize]
     public class ManufacturerController : ControllerBase
     {
         private readonly IManufacturerRepository _manufacturerRepo;

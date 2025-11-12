@@ -8,7 +8,8 @@ namespace MDMS_Backend.Controllers
     
     [Route("api/[controller]")]
     [ApiController]
-    //[Authorize]
+    [Authorize]
+
     public class RoleController : Controller
     {
         private readonly IRoleRepository _rolerepo;
