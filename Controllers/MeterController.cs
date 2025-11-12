@@ -18,51 +18,13 @@ namespace MDMS_Backend.Controllers
         }
 
         [HttpGet("AllMeters")]
-        [ProducesResponseType(200, Type = typeof(IEnumerable<MeterDetailDTO>))]
         public async Task<ActionResult<IEnumerable<MeterDetailDTO>>> GetAllMeters()
         {
             var meters = await _meterRepo.GetAllAsync();
-
             var dtos = meters.Select(m => new MeterDetailDTO
             {
                 MeterId = m.MeterId,
-                Ipaddress = m.Ipaddress,
-                Firmware = m.Firmware,
-                InstallDate = m.InstallDate.ToDateTime(TimeOnly.MinValue),
-                LatestReading = m.LatestReading,
-                CurrentReading = m.LatestReading, // Use LatestReading as current
-                LastReadingDate = null, // Will be updated when readings are recorded
-                ConsumerId = m.ConsumerId,
-                ConsumerName = m.Consumer?.Name ?? "Unknown Consumer",
-                DtrName = m.Dtr?.Dtrname ?? "Unknown DTR",
-                ManufacturerName = m.Manufacturer?.Name ?? "Unknown Manufacturer",
-                TariffName = m.Tariff?.Name ?? "Unknown Tariff",
-                TariffId = m.TariffId,
-                BaseRate = m.Tariff?.BaseRate ?? 0, // ADD THIS - Tariff base rate
-                StatusName = m.Status?.Name ?? "Unknown Status",
-				Iccid = m.Iccid,
-                Imsi = m.Iccid 
-
-			});
-
-            return Ok(dtos);
-        }
-
-        [HttpGet("{id:int}")]
-        [ProducesResponseType(200, Type = typeof(MeterDetailDTO))]
-        [ProducesResponseType(404)]
-        public async Task<ActionResult<MeterDetailDTO>> GetMeterById(int id)
-        {
-            var m = await _meterRepo.GetByIdAsync(id);
-
-            if (m == null)
-            {
-                return NotFound();
-            }
-
-            var dto = new MeterDetailDTO
-            {
-                MeterId = m.MeterId,
+                Dtrid = m.Dtrid, // ADD THIS LINE
                 Ipaddress = m.Ipaddress,
                 Firmware = m.Firmware,
                 InstallDate = m.InstallDate.ToDateTime(TimeOnly.MinValue),
@@ -77,10 +39,41 @@ namespace MDMS_Backend.Controllers
                 TariffId = m.TariffId,
                 BaseRate = m.Tariff?.BaseRate ?? 0,
                 StatusName = m.Status?.Name ?? "Unknown Status",
-				Iccid = m.Iccid,
-				Imsi = m.Iccid
-			};
+                Iccid = m.Iccid,
+                Imsi = m.Imsi
+            });
+            return Ok(dtos);
+        }
 
+        [HttpGet("{id:int}")]
+        public async Task<ActionResult<MeterDetailDTO>> GetMeterById(int id)
+        {
+            var m = await _meterRepo.GetByIdAsync(id);
+            if (m == null)
+            {
+                return NotFound();
+            }
+            var dto = new MeterDetailDTO
+            {
+                MeterId = m.MeterId,
+                Dtrid = m.Dtrid, // ADD THIS LINE
+                Ipaddress = m.Ipaddress,
+                Firmware = m.Firmware,
+                InstallDate = m.InstallDate.ToDateTime(TimeOnly.MinValue),
+                LatestReading = m.LatestReading,
+                CurrentReading = m.LatestReading,
+                LastReadingDate = null,
+                ConsumerId = m.ConsumerId,
+                ConsumerName = m.Consumer?.Name ?? "Unknown Consumer",
+                DtrName = m.Dtr?.Dtrname ?? "Unknown DTR",
+                ManufacturerName = m.Manufacturer?.Name ?? "Unknown Manufacturer",
+                TariffName = m.Tariff?.Name ?? "Unknown Tariff",
+                TariffId = m.TariffId,
+                BaseRate = m.Tariff?.BaseRate ?? 0,
+                StatusName = m.Status?.Name ?? "Unknown Status",
+                Iccid = m.Iccid,
+                Imsi = m.Imsi
+            };
             return Ok(dto);
         }
 
@@ -418,6 +411,7 @@ namespace MDMS_Backend.Controllers
     public class MeterDetailDTO
     {
         public int MeterId { get; set; }
+        public int Dtrid { get; set; } // ADD THIS LINE
         public string Ipaddress { get; set; } = null!;
         public string? Firmware { get; set; }
         public DateTime InstallDate { get; set; }
@@ -425,16 +419,15 @@ namespace MDMS_Backend.Controllers
         public decimal CurrentReading { get; set; }
         public DateTime? LastReadingDate { get; set; }
         public int ConsumerId { get; set; }
-		public string? Iccid { get; set; }
-		public string? Imsi { get; set; }
-		public string ConsumerName { get; set; } = null!;
+        public string? Iccid { get; set; }
+        public string? Imsi { get; set; }
+        public string ConsumerName { get; set; } = null!;
         public string DtrName { get; set; } = null!;
         public string ManufacturerName { get; set; } = null!;
         public string TariffName { get; set; } = null!;
         public int TariffId { get; set; }
-        public decimal BaseRate { get; set; } 
+        public decimal BaseRate { get; set; }
         public string StatusName { get; set; } = null!;
-
         // Additional info
         public DateTime? LastRecordDate { get; set; }
         public string? LastRecordBy { get; set; }
