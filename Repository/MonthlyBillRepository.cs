@@ -52,7 +52,6 @@
 //        }
 //    }
 //}
-
 using Microsoft.EntityFrameworkCore;
 using MDMS_Backend.Models;
 using System.Collections.Generic;
@@ -123,6 +122,18 @@ namespace MDMS_Backend.Repositories
             return result;
         }
 
+        public async Task<int> GenerateMonthlyBillsFromReadingsAsync(int month, int year)
+        {
+            var monthParam = new SqlParameter("@BillingMonth", month);
+            var yearParam = new SqlParameter("@BillingYear", year);
+
+            var result = await _context.Database
+                .ExecuteSqlRawAsync("EXEC GenerateMonthlyBillsFromReadings @BillingMonth, @BillingYear",
+                                  monthParam, yearParam);
+
+            return result;
+        }
+
         public async Task<IEnumerable<MonthlyBill>> GetByMeterAndMonthAsync(int meterId, int month, int year)
         {
             return await _context.MonthlyBills
@@ -135,6 +146,17 @@ namespace MDMS_Backend.Repositories
         }
 
         public async Task<IEnumerable<MonthlyBill>> GetByConsumerAsync(int consumerId)
+        {
+            return await _context.MonthlyBills
+                                 .Include(m => m.Consumer)
+                                 .Include(m => m.Meter)
+                                 .Where(m => m.ConsumerId == consumerId)
+                                 .OrderByDescending(m => m.BillingYear)
+                                 .ThenByDescending(m => m.BillingMonth)
+                                 .ToListAsync();
+        }
+
+        public async Task<IEnumerable<MonthlyBill>> GetByConsumerIdAsync(int consumerId)
         {
             return await _context.MonthlyBills
                                  .Include(m => m.Consumer)
