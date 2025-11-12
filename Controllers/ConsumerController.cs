@@ -89,7 +89,7 @@ namespace MDMS_Backend.Controllers
 
             if (!meterIds.Any())
             {
-                return Ok(new List<int>()); // return empty list if no meters
+                return Ok(new List<int>());
             }
 
             return Ok(meterIds);
