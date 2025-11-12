@@ -131,7 +131,7 @@ namespace MDMS_Backend.Controllers
     }
     public class DtrDTO
     {
-        public int? Dtrid { get; set; } // Nullable for creation
+        public int? Dtrid { get; set; } 
 
         [Required]
         public string Dtrname { get; set; } = null!;
