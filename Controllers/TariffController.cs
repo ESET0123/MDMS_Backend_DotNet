@@ -11,7 +11,7 @@ namespace MDMS_Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    
     public class TariffController : ControllerBase
     {
         private readonly ITariffRepository _tariffRepo;

@@ -11,7 +11,7 @@ namespace MDMS_Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    
     public class StatusController : ControllerBase
     {
         private readonly IStatusRepository _statusRepo;

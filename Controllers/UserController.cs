@@ -13,7 +13,7 @@ namespace MDMS_Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    
     public class UserController : ControllerBase
     {
         private readonly IUserRepository _userRepo;

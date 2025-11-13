@@ -10,7 +10,6 @@ namespace MDMS_Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-     [Authorize]
     public class FeederController : ControllerBase
     {
         private readonly IFeederRepository _feederRepo;

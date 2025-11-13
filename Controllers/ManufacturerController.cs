@@ -8,7 +8,7 @@ namespace MDMS_Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    
     public class ManufacturerController : ControllerBase
     {
         private readonly IManufacturerRepository _manufacturerRepo;

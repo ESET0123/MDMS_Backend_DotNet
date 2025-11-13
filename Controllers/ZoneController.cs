@@ -10,7 +10,7 @@ namespace MDMS_Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    
     public class ZoneController : ControllerBase
     {
         private readonly IZoneRepository _zoneRepo;
