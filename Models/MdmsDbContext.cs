@@ -55,14 +55,16 @@ public partial class MdmsDbContext : DbContext
         {
             // Fetch connection string from DI -> appsettings -> user secrets
             var configuration = new ConfigurationBuilder()
-            .SetBasePath(AppContext.BaseDirectory)
-            .AddJsonFile("appsettings.json", optional: true)
-            .AddUserSecrets()
-            .AddEnvironmentVariables()
-            .Build();
+                .SetBasePath(AppContext.BaseDirectory)
+                .AddJsonFile("appsettings.json", optional: true)
+                .AddUserSecrets<Program>()           
+                .AddEnvironmentVariables()
+                .Build();
+
             var connectionString = configuration.GetConnectionString("ConnectionDB");
+
             optionsBuilder.UseSqlServer(connectionString,
-            sql => sql.EnableRetryOnFailure());
+                sql => sql.EnableRetryOnFailure());
         }
     }
 
