@@ -14,3 +14,4 @@ namespace MDMS_Backend.Repository
         Task DeleteAsync(int id);
     }
 }
+
