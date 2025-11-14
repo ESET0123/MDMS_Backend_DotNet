@@ -8,7 +8,6 @@ namespace MDMS_Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-
     public class DailyMeterReadingController : ControllerBase
     {
         private readonly IDailyMeterReadingRepository _readingRepo;
@@ -97,6 +96,11 @@ namespace MDMS_Backend.Controllers
             if (meter == null)
                 return BadRequest(new { error = "Meter not found" });
 
+            // Get base rate from meter's tariff
+            var baseRate = meter.Tariff?.BaseRate ?? 0;
+            if (baseRate == 0)
+                return BadRequest(new { error = "Base rate not configured for this meter's tariff" });
+
             // Check for existing readings on this date
             var existingReadings = await _readingRepo.GetByDateAsync(model.ReadingDate);
             var existingForMeter = existingReadings.Where(r => r.MeterId == model.MeterId).ToList();
@@ -126,21 +130,27 @@ namespace MDMS_Backend.Controllers
                 // Validate readings
                 if (reading.CurrentReading < reading.PreviousReading)
                 {
-                    errors.Add($"Current reading ({reading.CurrentReading}) cannot be less than previous reading ({reading.PreviousReading})");
+                    errors.Add($"Current reading ({reading.CurrentReading}) cannot be less than previous reading ({reading.PreviousReading}) for {todRule.RuleName}");
                     continue;
                 }
 
+                // Calculate consumption
                 var consumption = reading.CurrentReading - reading.PreviousReading;
-                var baseRate = reading.BaseRate;
+
+                // Calculate surge and discount amounts
                 var surgeAmount = baseRate * (todRule.SurgeChargePercent / 100);
                 var discountAmount = baseRate * (todRule.DiscountPercent / 100);
+
+                // Calculate effective rate
                 var effectiveRate = baseRate + surgeAmount - discountAmount;
+
+                // Calculate total amount for this time slot
                 var amount = consumption * effectiveRate;
 
                 var dailyReading = new DailyMeterReading
                 {
                     MeterId = model.MeterId,
-                    ReadingDate = model.ReadingDate, // FIX: Added missing ReadingDate
+                    ReadingDate = model.ReadingDate,
                     TodRuleId = reading.TodRuleId,
                     StartTime = TimeOnly.Parse(reading.StartTime),
                     EndTime = TimeOnly.Parse(reading.EndTime),
@@ -171,7 +181,7 @@ namespace MDMS_Backend.Controllers
 
             await _readingRepo.AddRangeAsync(readings);
 
-            // Update meter's latest reading
+            // Update meter's latest reading to the highest current reading
             var latestReading = readings.Max(r => r.CurrentReading);
             meter.LatestReading = latestReading;
             await _meterRepo.UpdateAsync(meter);
@@ -181,6 +191,8 @@ namespace MDMS_Backend.Controllers
                 message = "Readings created successfully",
                 count = readings.Count,
                 totalConsumption = readings.Sum(r => r.ConsumptionKwh),
+                baseAmount = readings.Sum(r => r.ConsumptionKwh * r.BaseRate),
+                adjustmentAmount = readings.Sum(r => r.Amount - (r.ConsumptionKwh * r.BaseRate)),
                 totalAmount = readings.Sum(r => r.Amount)
             });
         }
@@ -258,10 +270,6 @@ namespace MDMS_Backend.Controllers
         [Required]
         [Range(0, double.MaxValue, ErrorMessage = "Current reading must be non-negative")]
         public decimal CurrentReading { get; set; }
-
-        [Required]
-        [Range(0.0001, 999.9999, ErrorMessage = "Base rate must be between 0.0001 and 999.9999")]
-        public decimal BaseRate { get; set; }
     }
 
     public class DailyReadingDetailDTO
