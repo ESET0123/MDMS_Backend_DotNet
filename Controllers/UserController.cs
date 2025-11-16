@@ -88,7 +88,7 @@ namespace MDMS_Backend.Controllers
 
             var userNew = new User
             {
-                UserId = "125",
+                UserId = model.UserId ,
                 Username = model.Username,
                 Email = model.Email,
                 Phone = model.Phone,

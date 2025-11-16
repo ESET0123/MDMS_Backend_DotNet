@@ -9,6 +9,8 @@ public partial class Consumer
 
     public string Name { get; set; } = null!;
 
+    public byte[] PasswordHash { get; set; } = null!;
+
     public string Address { get; set; } = null!;
 
     public string Phone { get; set; } = null!;
@@ -24,8 +26,6 @@ public partial class Consumer
     public DateTime? UpdatedAt { get; set; }
 
     public string? UpdatedBy { get; set; }
-
-    public byte[] PasswordHash { get; set; } = null!;
 
     public virtual ICollection<Meter> Meters { get; set; } = new List<Meter>();
 
