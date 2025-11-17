@@ -8,9 +8,9 @@ namespace MDMS_Backend.Repository
     {
         Task<IEnumerable<Meter>> GetAllAsync();
         Task<Meter> GetByIdAsync(int id);
-        Task AddAsync(Meter meter);
+        Task AddAsync(Meter newMeter);
         Task UpdateAsync(Meter meter);
         Task DeleteAsync(int id);
-
+        //Task<bool> ConsumerHasActiveMeters(int consumerId);
     }
 }

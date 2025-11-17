@@ -213,21 +213,6 @@ namespace MDMS_Backend.Controllers
                     errors.Add($"Consumer ID {meter.ConsumerId} does not exist");
                 }
 
-                // Validate DTR exists (you'll need to add this method to your repository)
-                // var dtr = await _meterRepo.DtrExistsAsync(meter.Dtrid);
-                // if (!dtr) errors.Add($"DTR ID {meter.Dtrid} does not exist");
-
-                // Validate Manufacturer exists
-                // var manufacturer = await _meterRepo.ManufacturerExistsAsync(meter.ManufacturerId);
-                // if (!manufacturer) errors.Add($"Manufacturer ID {meter.ManufacturerId} does not exist");
-
-                // Validate Tariff exists
-                // var tariff = await _meterRepo.TariffExistsAsync(meter.TariffId);
-                // if (!tariff) errors.Add($"Tariff ID {meter.TariffId} does not exist");
-
-                // Validate Status exists
-                // var status = await _meterRepo.StatusExistsAsync(meter.StatusId);
-                // if (!status) errors.Add($"Status ID {meter.StatusId} does not exist");
 
                 // Validate IP Address format
                 if (!IsValidIpAddress(meter.Ipaddress))
