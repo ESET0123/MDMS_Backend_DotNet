@@ -96,23 +96,50 @@ namespace MDMS_Backend.Controllers
             if (meter == null)
                 return BadRequest(new { error = "Meter not found" });
 
-            // Get base rate from meter's tariff
-            var baseRate = meter.Tariff?.BaseRate ?? 0;
-            if (baseRate == 0)
-                return BadRequest(new { error = "Base rate not configured for this meter's tariff" });
+            // Validate reading date is not before meter install date
+            if (model.ReadingDate < meter.InstallDate)
+            {
+                return BadRequest(new
+                {
+                    error = $"Reading date ({model.ReadingDate}) cannot be before meter installation date ({meter.InstallDate})"
+                });
+            }
 
-            // Check for existing readings on this date
-            var existingReadings = await _readingRepo.GetByDateAsync(model.ReadingDate);
-            var existingForMeter = existingReadings.Where(r => r.MeterId == model.MeterId).ToList();
+            // NEW VALIDATION: Check chronological date order
+            var existingReadings = await _readingRepo.GetByMeterAsync(model.MeterId);
+            var latestReadingDate = existingReadings
+                .OrderByDescending(r => r.ReadingDate)
+                .Select(r => r.ReadingDate)
+                .FirstOrDefault();
 
-            if (existingForMeter.Any())
+            // If there are existing readings, check if new date is not older than latest recorded date
+            if (existingReadings.Any() && model.ReadingDate < latestReadingDate)
+            {
+                return BadRequest(new
+                {
+                    error = $"Cannot add readings for date {model.ReadingDate} because later readings already exist for {latestReadingDate}. Readings must be added in chronological order (newest dates first).",
+                    latestRecordedDate = latestReadingDate,
+                    attemptedDate = model.ReadingDate
+                });
+            }
+
+            // Check for existing readings on this exact date
+            var existingReadingsOnDate = await _readingRepo.GetByDateAsync(model.ReadingDate);
+            var existingForMeterOnDate = existingReadingsOnDate.Where(r => r.MeterId == model.MeterId).ToList();
+
+            if (existingForMeterOnDate.Any())
             {
                 return BadRequest(new
                 {
                     error = $"Readings already exist for Meter #{model.MeterId} on {model.ReadingDate}. Please delete existing readings first or choose a different date.",
-                    existingCount = existingForMeter.Count
+                    existingCount = existingForMeterOnDate.Count
                 });
             }
+
+            // Rest of your existing code continues...
+            var baseRate = meter.Tariff?.BaseRate ?? 0;
+            if (baseRate == 0)
+                return BadRequest(new { error = "Base rate not configured for this meter's tariff" });
 
             var readings = new List<DailyMeterReading>();
             var errors = new List<string>();
@@ -196,6 +223,122 @@ namespace MDMS_Backend.Controllers
                 totalAmount = readings.Sum(r => r.Amount)
             });
         }
+
+
+        //[HttpPost("CreateBulk")]
+        //[ProducesResponseType(201)]
+        //[ProducesResponseType(400)]
+        //public async Task<ActionResult> CreateBulkReadings([FromBody] BulkReadingDTO model)
+        //{
+        //    if (!ModelState.IsValid)
+        //        return BadRequest(ModelState);
+
+        //    // Validate meter exists
+        //    var meter = await _meterRepo.GetByIdAsync(model.MeterId);
+        //    if (meter == null)
+        //        return BadRequest(new { error = "Meter not found" });
+
+        //    // Get base rate from meter's tariff
+        //    var baseRate = meter.Tariff?.BaseRate ?? 0;
+        //    if (baseRate == 0)
+        //        return BadRequest(new { error = "Base rate not configured for this meter's tariff" });
+
+        //    // Check for existing readings on this date
+        //    var existingReadings = await _readingRepo.GetByDateAsync(model.ReadingDate);
+        //    var existingForMeter = existingReadings.Where(r => r.MeterId == model.MeterId).ToList();
+
+        //    if (existingForMeter.Any())
+        //    {
+        //        return BadRequest(new
+        //        {
+        //            error = $"Readings already exist for Meter #{model.MeterId} on {model.ReadingDate}. Please delete existing readings first or choose a different date.",
+        //            existingCount = existingForMeter.Count
+        //        });
+        //    }
+
+        //    var readings = new List<DailyMeterReading>();
+        //    var errors = new List<string>();
+
+        //    foreach (var reading in model.Readings)
+        //    {
+        //        // Validate TOD rule exists
+        //        var todRule = await _todRuleRepo.GetByIdAsync(reading.TodRuleId);
+        //        if (todRule == null)
+        //        {
+        //            errors.Add($"TOD Rule ID {reading.TodRuleId} not found");
+        //            continue;
+        //        }
+
+        //        // Validate readings
+        //        if (reading.CurrentReading < reading.PreviousReading)
+        //        {
+        //            errors.Add($"Current reading ({reading.CurrentReading}) cannot be less than previous reading ({reading.PreviousReading}) for {todRule.RuleName}");
+        //            continue;
+        //        }
+
+        //        // Calculate consumption
+        //        var consumption = reading.CurrentReading - reading.PreviousReading;
+
+        //        // Calculate surge and discount amounts
+        //        var surgeAmount = baseRate * (todRule.SurgeChargePercent / 100);
+        //        var discountAmount = baseRate * (todRule.DiscountPercent / 100);
+
+        //        // Calculate effective rate
+        //        var effectiveRate = baseRate + surgeAmount - discountAmount;
+
+        //        // Calculate total amount for this time slot
+        //        var amount = consumption * effectiveRate;
+
+        //        var dailyReading = new DailyMeterReading
+        //        {
+        //            MeterId = model.MeterId,
+        //            ReadingDate = model.ReadingDate,
+        //            TodRuleId = reading.TodRuleId,
+        //            StartTime = TimeOnly.Parse(reading.StartTime),
+        //            EndTime = TimeOnly.Parse(reading.EndTime),
+        //            PreviousReading = reading.PreviousReading,
+        //            CurrentReading = reading.CurrentReading,
+        //            ConsumptionKwh = consumption,
+        //            BaseRate = baseRate,
+        //            SurgeChargePercent = todRule.SurgeChargePercent,
+        //            DiscountPercent = todRule.DiscountPercent,
+        //            EffectiveRate = effectiveRate,
+        //            Amount = amount,
+        //            RecordedBy = model.RecordedBy,
+        //            CreatedAt = DateTime.UtcNow
+        //        };
+
+        //        readings.Add(dailyReading);
+        //    }
+
+        //    if (errors.Any())
+        //    {
+        //        return BadRequest(new { errors = errors });
+        //    }
+
+        //    if (readings.Count == 0)
+        //    {
+        //        return BadRequest(new { error = "No valid readings to save" });
+        //    }
+
+        //    await _readingRepo.AddRangeAsync(readings);
+
+        //    // Update meter's latest reading to the highest current reading
+        //    var latestReading = readings.Max(r => r.CurrentReading);
+        //    meter.LatestReading = latestReading;
+        //    await _meterRepo.UpdateAsync(meter);
+
+        //    return Ok(new
+        //    {
+        //        message = "Readings created successfully",
+        //        count = readings.Count,
+        //        totalConsumption = readings.Sum(r => r.ConsumptionKwh),
+        //        baseAmount = readings.Sum(r => r.ConsumptionKwh * r.BaseRate),
+        //        adjustmentAmount = readings.Sum(r => r.Amount - (r.ConsumptionKwh * r.BaseRate)),
+        //        totalAmount = readings.Sum(r => r.Amount)
+        //    });
+        //}
+
 
         [HttpDelete("{id}")]
         [ProducesResponseType(204)]
