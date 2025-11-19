@@ -74,7 +74,7 @@ namespace MDMS_Backend.Repositories
         {
             return await _context.MonthlyBills
                                  .Include(m => m.Consumer)
-                                 .Include(m => m.Meter)
+                                 .Include(m => m.Meter).ThenInclude(meter => meter.Tariff)
                                  .OrderByDescending(m => m.BillingYear)
                                  .ThenByDescending(m => m.BillingMonth)
                                  .ToListAsync();
@@ -84,7 +84,7 @@ namespace MDMS_Backend.Repositories
         {
             return await _context.MonthlyBills
                                  .Include(m => m.Consumer)
-                                 .Include(m => m.Meter)
+                                 .Include(m => m.Meter).ThenInclude(meter => meter.Tariff)
                                  .FirstOrDefaultAsync(m => m.BillId == billId);
         }
 
@@ -118,7 +118,6 @@ namespace MDMS_Backend.Repositories
             var result = await _context.Database
                 .ExecuteSqlRawAsync("EXEC GenerateMonthlyBills @BillingMonth, @BillingYear",
                                   monthParam, yearParam);
-
             return result;
         }
 
@@ -126,19 +125,25 @@ namespace MDMS_Backend.Repositories
         {
             var monthParam = new SqlParameter("@BillingMonth", month);
             var yearParam = new SqlParameter("@BillingYear", year);
+            var outputParam = new SqlParameter
+            {
+                ParameterName = "@BillsAffected",
+                SqlDbType = System.Data.SqlDbType.Int,
+                Direction = System.Data.ParameterDirection.Output
+            };
 
-            var result = await _context.Database
-                .ExecuteSqlRawAsync("EXEC GenerateMonthlyBillsFromReadings @BillingMonth, @BillingYear",
-                                  monthParam, yearParam);
+            await _context.Database.ExecuteSqlRawAsync(
+                "EXEC GenerateMonthlyBillsFromReadings @BillingMonth, @BillingYear, @BillsAffected OUTPUT",
+                monthParam, yearParam, outputParam);
 
-            return result;
+            return (int)outputParam.Value;
         }
 
         public async Task<IEnumerable<MonthlyBill>> GetByMeterAndMonthAsync(int meterId, int month, int year)
         {
             return await _context.MonthlyBills
                                  .Include(m => m.Consumer)
-                                 .Include(m => m.Meter)
+                                 .Include(m => m.Meter).ThenInclude(meter => meter.Tariff)
                                  .Where(m => m.MeterId == meterId &&
                                             m.BillingMonth == month &&
                                             m.BillingYear == year)
@@ -149,7 +154,7 @@ namespace MDMS_Backend.Repositories
         {
             return await _context.MonthlyBills
                                  .Include(m => m.Consumer)
-                                 .Include(m => m.Meter)
+                                 .Include(m => m.Meter).ThenInclude(meter => meter.Tariff)
                                  .Where(m => m.ConsumerId == consumerId)
                                  .OrderByDescending(m => m.BillingYear)
                                  .ThenByDescending(m => m.BillingMonth)
@@ -160,7 +165,7 @@ namespace MDMS_Backend.Repositories
         {
             return await _context.MonthlyBills
                                  .Include(m => m.Consumer)
-                                 .Include(m => m.Meter)
+                                 .Include(m => m.Meter).ThenInclude(meter => meter.Tariff)
                                  .Where(m => m.ConsumerId == consumerId)
                                  .OrderByDescending(m => m.BillingYear)
                                  .ThenByDescending(m => m.BillingMonth)

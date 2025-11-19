@@ -10,8 +10,7 @@ namespace MDMS_Backend.Controllers
 {
 	[Route("api/[controller]")]
 	[ApiController]
-    
-
+ 
     public class MonthlyBillController : ControllerBase
 	{
 		private readonly IMonthlyBillRepository _monthlyBillRepo;
@@ -37,7 +36,8 @@ namespace MDMS_Backend.Controllers
 				ConsumerId = b.ConsumerId,
 				ConsumerName = b.Consumer?.Name ?? "N/A",
 				MeterId = b.MeterId,
-				BillingDate = b.BillingDate,
+                TariffName = b.Meter?.Tariff?.Name ?? "N/A",
+                BillingDate = b.BillingDate,
 				TotalConsumptionKwh = b.TotalConsumptionKwh,
 				TotalAmount = b.TotalAmount,
 				BillStatus = b.BillStatus,
@@ -66,7 +66,8 @@ namespace MDMS_Backend.Controllers
 				ConsumerId = bill.ConsumerId,
 				ConsumerName = bill.Consumer?.Name ?? "N/A",
 				MeterId = bill.MeterId,
-				BillingDate = bill.BillingDate,
+                TariffName = bill.Meter?.Tariff?.Name ?? "N/A",
+                BillingDate = bill.BillingDate,
 				TotalConsumptionKwh = bill.TotalConsumptionKwh,
 				TotalAmount = bill.TotalAmount,
 				BillStatus = bill.BillStatus,
@@ -217,13 +218,13 @@ namespace MDMS_Backend.Controllers
 			try
 			{
 				var billsGenerated = await _monthlyBillRepo.GenerateMonthlyBillsFromReadingsAsync(request.Month, request.Year);
-
+				//Console.WriteLine(billsGenerated);
 				var result = new BillGenerationResult
 				{
 					Month = request.Month,
 					Year = request.Year,
 					BillsGenerated = billsGenerated,
-					Message = $"{billsGenerated} bills generated from daily readings for {request.Month}/{request.Year}"
+					Message = $"Bills generated from daily readings for {request.Month}/{request.Year}"
 				};
 
 				return Ok(result);
@@ -246,7 +247,8 @@ namespace MDMS_Backend.Controllers
 				ConsumerId = b.ConsumerId,
 				ConsumerName = b.Consumer?.Name ?? "N/A",
 				MeterId = b.MeterId,
-				BillingDate = b.BillingDate,
+                TariffName = b.Meter?.Tariff?.Name ?? "N/A",
+                BillingDate = b.BillingDate,
 				TotalConsumptionKwh = b.TotalConsumptionKwh,
 				TotalAmount = b.TotalAmount,
 				BillStatus = b.BillStatus,
@@ -268,7 +270,8 @@ namespace MDMS_Backend.Controllers
 				BillId = b.BillId,
 				ConsumerId = b.ConsumerId,
 				ConsumerName = b.Consumer?.Name ?? "N/A",
-				MeterId = b.MeterId,
+                MeterId = b.MeterId,
+                TariffName = b.Meter?.Tariff?.Name ?? "N/A",
 				BillingDate = b.BillingDate,
 				TotalConsumptionKwh = b.TotalConsumptionKwh,
 				TotalAmount = b.TotalAmount,
@@ -392,17 +395,18 @@ namespace MDMS_Backend.Controllers
 		public string BillStatus { get; set; } = null!;
 	}
 
-	public class MonthlyBillDetailDTO
-	{
-		public int BillId { get; set; }
-		public int ConsumerId { get; set; }
-		public string ConsumerName { get; set; } = null!;
-		public int MeterId { get; set; }
-		public DateOnly BillingDate { get; set; }
-		public decimal TotalConsumptionKwh { get; set; }
-		public decimal TotalAmount { get; set; }
-		public string BillStatus { get; set; } = null!;
-		public int BillingMonth { get; set; }
-		public int BillingYear { get; set; }
-	}
+    public class MonthlyBillDetailDTO
+    {
+        public int BillId { get; set; }
+        public int ConsumerId { get; set; }
+        public string ConsumerName { get; set; } = null!;
+        public int MeterId { get; set; }
+        public string TariffName { get; set; } = null!;
+        public DateOnly BillingDate { get; set; }
+        public decimal TotalConsumptionKwh { get; set; }
+        public decimal TotalAmount { get; set; }
+        public string BillStatus { get; set; } = null!;
+        public int BillingMonth { get; set; }
+        public int BillingYear { get; set; }
+    }
 }

@@ -53,7 +53,6 @@ namespace MDMS_Backend.Repository
         public async Task UpdateAsync(TariffSlab tariffSlab)
         {
             var existingTariffSlab = await _dbcontext.TariffSlabs.FirstOrDefaultAsync(n => n.SlabId == tariffSlab.SlabId);
-
             if (existingTariffSlab == null)
             {
                 return;
@@ -63,8 +62,42 @@ namespace MDMS_Backend.Repository
             existingTariffSlab.FromKwh = tariffSlab.FromKwh;
             existingTariffSlab.ToKwh = tariffSlab.ToKwh;
             existingTariffSlab.RatePerKwh = tariffSlab.RatePerKwh;
+            existingTariffSlab.FromDate = tariffSlab.FromDate;
+            existingTariffSlab.ToDate = tariffSlab.ToDate;
 
             await _dbcontext.SaveChangesAsync();
+        }
+
+        public async Task<bool> HasOverlappingSlabAsync(TariffSlab slab, int? excludeSlabId = null)
+        {
+            var query = _dbcontext.TariffSlabs
+                .Where(ts => ts.TariffId == slab.TariffId)
+                // Check for date range overlap
+                .Where(ts => ts.FromDate <= slab.ToDate && ts.ToDate >= slab.FromDate)
+                // Check for consumption range overlap
+                .Where(ts => ts.FromKwh <= slab.ToKwh && ts.ToKwh >= slab.FromKwh);
+
+            if (excludeSlabId.HasValue)
+            {
+                query = query.Where(ts => ts.SlabId != excludeSlabId.Value);
+            }
+
+            return await query.AnyAsync();
+        }
+
+        public async Task<IEnumerable<TariffSlab>> GetPotentialOverlapsAsync(int tariffId, DateOnly fromDate, DateOnly toDate, decimal fromKwh, decimal toKwh, int? excludeSlabId = null)
+        {
+            var query = _dbcontext.TariffSlabs
+                .Where(ts => ts.TariffId == tariffId)
+                .Where(ts => ts.FromDate <= toDate && ts.ToDate >= fromDate)
+                .Where(ts => ts.FromKwh <= toKwh && ts.ToKwh >= fromKwh);
+
+            if (excludeSlabId.HasValue)
+            {
+                query = query.Where(ts => ts.SlabId != excludeSlabId.Value);
+            }
+
+            return await query.Include(ts => ts.Tariff).ToListAsync();
         }
     }
 }

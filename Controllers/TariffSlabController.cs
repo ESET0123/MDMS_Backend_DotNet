@@ -34,7 +34,9 @@ namespace MDMS_Backend.Controllers
                 TariffName = s.Tariff?.Name ?? "Unknown Tariff",
                 FromKwh = s.FromKwh,
                 ToKwh = s.ToKwh,
-                RatePerKwh = s.RatePerKwh
+                RatePerKwh = s.RatePerKwh,
+                FromDate = s.FromDate,  
+                ToDate = s.ToDate       
             });
 
             return Ok(dtos);
@@ -59,7 +61,9 @@ namespace MDMS_Backend.Controllers
                 TariffName = slab.Tariff?.Name ?? "Unknown Tariff",
                 FromKwh = slab.FromKwh,
                 ToKwh = slab.ToKwh,
-                RatePerKwh = slab.RatePerKwh
+                RatePerKwh = slab.RatePerKwh,
+                FromDate = slab.FromDate,  
+                ToDate = slab.ToDate       
             };
 
             return Ok(dto);
@@ -78,7 +82,9 @@ namespace MDMS_Backend.Controllers
                 TariffName = s.Tariff?.Name ?? "Unknown Tariff",
                 FromKwh = s.FromKwh,
                 ToKwh = s.ToKwh,
-                RatePerKwh = s.RatePerKwh
+                RatePerKwh = s.RatePerKwh,
+                FromDate = s.FromDate,  
+                ToDate = s.ToDate       
             });
 
             return Ok(dtos);
@@ -90,9 +96,15 @@ namespace MDMS_Backend.Controllers
         [ProducesResponseType(400)]
         public async Task<ActionResult> CreateTariffSlab([FromBody] TariffSlabDTO model)
         {
+            // Basic validation
             if (model.ToKwh <= model.FromKwh)
             {
                 ModelState.AddModelError("ToKwh", "ToKwh must be greater than FromKwh.");
+            }
+
+            if (model.ToDate <= model.FromDate)
+            {
+                ModelState.AddModelError("ToDate", "ToDate must be greater than FromDate.");
             }
 
             if (model == null || !ModelState.IsValid)
@@ -105,8 +117,31 @@ namespace MDMS_Backend.Controllers
                 TariffId = model.TariffId,
                 FromKwh = model.FromKwh,
                 ToKwh = model.ToKwh,
-                RatePerKwh = model.RatePerKwh
+                RatePerKwh = model.RatePerKwh,
+                FromDate = DateOnly.FromDateTime(model.FromDate),
+                ToDate = DateOnly.FromDateTime(model.ToDate)
             };
+
+            // Check for overlapping slabs
+            bool hasOverlap = await _tariffSlabRepo.HasOverlappingSlabAsync(tariffSlabNew);
+            if (hasOverlap)
+            {
+                // Get the overlapping slabs for detailed error message
+                var overlappingSlabs = await _tariffSlabRepo.GetPotentialOverlapsAsync(
+                    model.TariffId,
+                    DateOnly.FromDateTime(model.FromDate),
+                    DateOnly.FromDateTime(model.ToDate),
+                    model.FromKwh,
+                    model.ToKwh
+                );
+
+                var errorMessage = overlappingSlabs.Any()
+                    ? $"This tariff slab overlaps with existing slab(s): {string.Join(", ", overlappingSlabs.Select(s => $"Slab {s.SlabId} ({s.FromDate} to {s.ToDate}, {s.FromKwh}-{s.ToKwh}kWh)"))}"
+                    : "This tariff slab overlaps with an existing slab in terms of date range and consumption range for the same tariff type.";
+
+                ModelState.AddModelError("", errorMessage);
+                return BadRequest(ModelState);
+            }
 
             await _tariffSlabRepo.AddAsync(tariffSlabNew);
             return CreatedAtAction(nameof(GetTariffSlabById), new { id = tariffSlabNew.SlabId }, tariffSlabNew);
@@ -121,6 +156,11 @@ namespace MDMS_Backend.Controllers
             if (model.ToKwh <= model.FromKwh)
             {
                 ModelState.AddModelError("ToKwh", "ToKwh must be greater than FromKwh.");
+            }
+
+            if (model.ToDate <= model.FromDate)
+            {
+                ModelState.AddModelError("ToDate", "ToDate must be greater than FromDate.");
             }
 
             if (model == null || model.SlabId == null || model.SlabId <= 0 || !ModelState.IsValid)
@@ -140,12 +180,112 @@ namespace MDMS_Backend.Controllers
                 TariffId = model.TariffId,
                 FromKwh = model.FromKwh,
                 ToKwh = model.ToKwh,
-                RatePerKwh = model.RatePerKwh
+                RatePerKwh = model.RatePerKwh,
+                FromDate = DateOnly.FromDateTime(model.FromDate),
+                ToDate = DateOnly.FromDateTime(model.ToDate)
             };
+
+            // Check for overlapping slabs (excluding current slab being updated)
+            bool hasOverlap = await _tariffSlabRepo.HasOverlappingSlabAsync(tariffSlabUpdate, model.SlabId.Value);
+            if (hasOverlap)
+            {
+                // Get the overlapping slabs for detailed error message
+                var overlappingSlabs = await _tariffSlabRepo.GetPotentialOverlapsAsync(
+                    model.TariffId,
+                    DateOnly.FromDateTime(model.FromDate),
+                    DateOnly.FromDateTime(model.ToDate),
+                    model.FromKwh,
+                    model.ToKwh,
+                    model.SlabId.Value
+                );
+
+                var errorMessage = overlappingSlabs.Any()
+                    ? $"This tariff slab overlaps with existing slab(s): {string.Join(", ", overlappingSlabs.Select(s => $"Slab {s.SlabId} ({s.FromDate} to {s.ToDate}, {s.FromKwh}-{s.ToKwh}kWh)"))}"
+                    : "This tariff slab overlaps with an existing slab in terms of date range and consumption range for the same tariff type.";
+
+                ModelState.AddModelError("", errorMessage);
+                return BadRequest(ModelState);
+            }
 
             await _tariffSlabRepo.UpdateAsync(tariffSlabUpdate);
             return NoContent();
         }
+
+        //[HttpPost("Create")]
+        //[ProducesResponseType(201)]
+        //[ProducesResponseType(400)]
+        //public async Task<ActionResult> CreateTariffSlab([FromBody] TariffSlabDTO model)
+        //{
+        //    if (model.ToKwh <= model.FromKwh)
+        //    {
+        //        ModelState.AddModelError("ToKwh", "ToKwh must be greater than FromKwh.");
+        //    }
+
+        //    if (model.ToDate <= model.FromDate) 
+        //    {
+        //        ModelState.AddModelError("ToDate", "ToDate must be greater than FromDate.");
+        //    }
+
+        //    if (model == null || !ModelState.IsValid)
+        //    {
+        //        return BadRequest(ModelState);
+        //    }
+
+        //    var tariffSlabNew = new TariffSlab
+        //    {
+        //        TariffId = model.TariffId,
+        //        FromKwh = model.FromKwh,
+        //        ToKwh = model.ToKwh,
+        //        RatePerKwh = model.RatePerKwh,
+        //        FromDate = DateOnly.FromDateTime(model.FromDate),  
+        //        ToDate = DateOnly.FromDateTime(model.ToDate)       
+        //    };
+
+        //    await _tariffSlabRepo.AddAsync(tariffSlabNew);
+        //    return CreatedAtAction(nameof(GetTariffSlabById), new { id = tariffSlabNew.SlabId }, tariffSlabNew);
+        //}
+
+        //[HttpPut("Update")]
+        //[ProducesResponseType(204)]
+        //[ProducesResponseType(400)]
+        //[ProducesResponseType(404)]
+        //public async Task<ActionResult> UpdateTariffSlab([FromBody] TariffSlabDTO model)
+        //{
+        //    if (model.ToKwh <= model.FromKwh)
+        //    {
+        //        ModelState.AddModelError("ToKwh", "ToKwh must be greater than FromKwh.");
+        //    }
+
+        //    if (model.ToDate <= model.FromDate)   
+        //    {
+        //        ModelState.AddModelError("ToDate", "ToDate must be greater than FromDate.");
+        //    }
+
+        //    if (model == null || model.SlabId == null || model.SlabId <= 0 || !ModelState.IsValid)
+        //    {
+        //        return BadRequest();
+        //    }
+
+        //    var existingTariffSlab = await _tariffSlabRepo.GetByIdAsync(model.SlabId.Value);
+        //    if (existingTariffSlab == null)
+        //    {
+        //        return NotFound();
+        //    }
+
+        //    var tariffSlabUpdate = new TariffSlab
+        //    {
+        //        SlabId = model.SlabId.Value,
+        //        TariffId = model.TariffId,
+        //        FromKwh = model.FromKwh,
+        //        ToKwh = model.ToKwh,
+        //        RatePerKwh = model.RatePerKwh,
+        //        FromDate = DateOnly.FromDateTime(model.FromDate),  
+        //        ToDate = DateOnly.FromDateTime(model.ToDate)       
+        //    };
+
+        //    await _tariffSlabRepo.UpdateAsync(tariffSlabUpdate);
+        //    return NoContent();
+        //}
 
         [HttpDelete("{id:int}")]
         [ProducesResponseType(204)]
@@ -187,6 +327,12 @@ namespace MDMS_Backend.Controllers
         [Required]
         [Range(0, (double)decimal.MaxValue, ErrorMessage = "RatePerKwh must be a positive number.")]
         public decimal RatePerKwh { get; set; }
+
+        [Required]
+        public DateTime FromDate { get; set; }
+
+        [Required]
+        public DateTime ToDate { get; set; }
     }
 
     public class TariffSlabDetailDTO
@@ -197,5 +343,7 @@ namespace MDMS_Backend.Controllers
         public decimal FromKwh { get; set; }
         public decimal ToKwh { get; set; }
         public decimal RatePerKwh { get; set; }
+        public DateOnly FromDate { get; set; }
+        public DateOnly ToDate { get; set; }
     }
 }

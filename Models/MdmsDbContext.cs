@@ -45,10 +45,6 @@ public partial class MdmsDbContext : DbContext
 
     public virtual DbSet<Zone> Zones { get; set; }
 
-    //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-    //        => optionsBuilder.UseSqlServer("Server=tcp:mdms-azure-server.database.windows.net,1433;Initial Catalog=MDMS_DB;Persist Security Info=False;User ID=sqladmin;Password=manjit@123;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Timeout=30");
-
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         if (!optionsBuilder.IsConfigured)
@@ -290,6 +286,7 @@ public partial class MdmsDbContext : DbContext
             entity.HasKey(e => e.SlabId);
 
             entity.Property(e => e.SlabId).HasColumnName("SlabID");
+            entity.Property(e => e.FromDate).HasColumnName("fromDate");
             entity.Property(e => e.FromKwh)
                 .HasColumnType("decimal(10, 2)")
                 .HasColumnName("FromKWh");
@@ -297,6 +294,7 @@ public partial class MdmsDbContext : DbContext
                 .HasColumnType("decimal(10, 2)")
                 .HasColumnName("RatePerKWh");
             entity.Property(e => e.TariffId).HasColumnName("TariffID");
+            entity.Property(e => e.ToDate).HasColumnName("toDate");
             entity.Property(e => e.ToKwh)
                 .HasColumnType("decimal(10, 2)")
                 .HasColumnName("ToKWh");
