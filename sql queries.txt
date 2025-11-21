@@ -1,0 +1,832 @@
+	--Roles
+	CREATE TABLE Roles (
+		RoleID INT IDENTITY(1,1) PRIMARY KEY,
+		RoleName NVARCHAR(50) NOT NULL UNIQUE,
+		Abbreviation NVARCHAR(3) NOT NULL UNIQUE
+	);
+
+	--Users
+	CREATE TABLE Users (
+		UserNumber  INT IDENTITY(1,1),
+		UserID NVARCHAR(10) primary key ,
+		Username NVARCHAR(50) NOT NULL,
+		Email NVARCHAR(100) NOT NULL UNIQUE,
+		Phone NVARCHAR(15),
+		PasswordHashed VARBINARY(256) NOT NULL,
+		RoleID INT NOT NULL,
+		LastLogin DATETIME,
+		Active BIT NOT NULL,
+		CONSTRAINT UQ_UserNumber UNIQUE (UserNumber),
+		CONSTRAINT FK_Users_Roles FOREIGN KEY (RoleID) REFERENCES Roles(RoleID)
+	);
+	
+	CREATE or alter TRIGGER trg_GenerateUserID
+	ON Users
+	AFTER INSERT
+	AS
+	BEGIN
+		SET NOCOUNT ON;
+    
+		UPDATE u
+		SET u.UserID = 'ES' + r.Abbreviation + FORMAT(i.UserNumber, 'D4')
+		FROM Users u
+		INNER JOIN inserted i ON u.UserNumber = i.UserNumber
+		INNER JOIN Roles r ON i.RoleID = r.RoleID;
+	END;
+
+	-- Org Unit Hierarchy
+	CREATE TABLE Zones (
+		ZoneID INT IDENTITY(1,1) PRIMARY KEY,
+		ZoneName NVARCHAR(50) NOT NULL UNIQUE
+	);
+
+	CREATE TABLE Substations (
+		SubstationID INT IDENTITY(1,1) PRIMARY KEY,
+		SubstationName NVARCHAR(50) NOT NULL UNIQUE,
+		ZoneID INT NOT NULL,
+		CONSTRAINT FK_Substations_Zones FOREIGN KEY (ZoneID) REFERENCES Zones(ZoneID)
+	);
+
+	CREATE TABLE Feeders (
+		FeederID INT IDENTITY(1,1) PRIMARY KEY,
+		FeederName NVARCHAR(50) NOT NULL UNIQUE,
+		SubstationID INT NOT NULL,
+		CONSTRAINT FK_Feeders_Substations FOREIGN KEY (SubstationID) REFERENCES Substations(SubstationID)
+	);
+
+	CREATE TABLE DTRs (
+		DTRID INT IDENTITY(1,1) PRIMARY KEY,
+		DTRName NVARCHAR(50) NOT NULL UNIQUE,
+		FeederID INT NOT NULL,
+		CONSTRAINT FK_DTRs_Feeders FOREIGN KEY (FeederID) REFERENCES Feeders(FeederID)
+	);
+
+	--Tariffs
+	CREATE TABLE Tariffs (
+		TariffID INT PRIMARY KEY IDENTITY(1,1),
+		Name NVARCHAR(50) NOT NULL,
+		EffectiveFrom DATE NOT NULL,
+		EffectiveTo DATE,
+		BaseRate DECIMAL(10, 2) NOT NULL DEFAULT 0,
+		TaxRate DECIMAL(5, 2) NOT NULL DEFAULT 0,
+	);
+
+	CREATE TABLE TariffSlabs (
+		SlabID INT IDENTITY(1,1),
+		TariffID int NOT NULL,
+		FromKWh DECIMAL(10, 2) NOT NULL,
+		ToKWh DECIMAL(10, 2) NOT NULL,
+		RatePerKWh DECIMAL(10, 2) NOT NULL,
+		fromDate DATE NOT NULL,
+		toDate DATE NOT NULL,
+		CONSTRAINT PK_TariffSlabs PRIMARY KEY (SlabID),
+		CONSTRAINT FK_TariffSlabs_Tariffs FOREIGN KEY (TariffID) REFERENCES Tariffs(TariffID)
+	);
+	
+	-- Status
+	CREATE TABLE Statuses (
+		StatusID INT IDENTITY(1,1) PRIMARY KEY,
+		Name NVARCHAR(20) NOT NULL UNIQUE
+	);
+
+	--Consumers
+	CREATE TABLE Consumers (
+		ConsumerID INT IDENTITY(1,1),
+		Name NVARCHAR(100) NOT NULL,
+		PasswordHash VARBINARY(256) NOT NULL,
+		Address NVARCHAR(255) NOT NULL,
+		Phone NVARCHAR(20) NOT NULL,
+		Email NVARCHAR(100) NOT NULL,
+		StatusID INT NOT NULL,
+		CreatedAt DATETIME NOT NULL,
+		CreatedBy NVARCHAR(50) NOT NULL,
+		UpdatedAt DATETIME,
+		UpdatedBy NVARCHAR(50),
+		CONSTRAINT PK_Consumers PRIMARY KEY (ConsumerID),
+		CONSTRAINT FK_Consumers_Statuses FOREIGN KEY (StatusID) REFERENCES Statuses(StatusID)
+	);
+	
+	--Manufacturer
+	CREATE TABLE Manufacturers (
+		ManufacturerID INT IDENTITY(1,1) PRIMARY KEY,
+		Name NVARCHAR(50) NOT NULL UNIQUE
+	);
+
+	--Meters
+	CREATE TABLE Meters (
+		MeterID INT IDENTITY(1,1),
+		ConsumerID INT NOT NULL,
+		DTRID INT NOT NULL,
+		IPAddress NVARCHAR(15) UNIQUE NOT NULL,
+		ICCID NVARCHAR(20),
+		IMSI NVARCHAR(20),
+		ManufacturerID INT NOT NULL,
+		Firmware NVARCHAR(10),
+		TariffID INT NOT NULL,
+		InstallDate DATE NOT NULL,
+		StatusID INT NOT NULL,
+		LatestReading DECIMAL(18, 4) NOT NULL DEFAULT 0, 
+		CONSTRAINT PK_Meters PRIMARY KEY (MeterID),
+		CONSTRAINT FK_Meters_Consumers FOREIGN KEY (ConsumerID) REFERENCES Consumers(ConsumerID),
+		CONSTRAINT FK_Meters_Manufacturers FOREIGN KEY (ManufacturerID) REFERENCES Manufacturers(ManufacturerID),
+		CONSTRAINT FK_Meters_Tariffs FOREIGN KEY (TariffID) REFERENCES Tariffs(TariffID),
+		CONSTRAINT FK_Meters_DTRs FOREIGN KEY (DTRID) REFERENCES DTRs(DTRID),
+		CONSTRAINT FK_Meters_Statuses FOREIGN KEY (StatusID) REFERENCES Statuses(StatusID)
+	);
+	
+	-- drop table Meters
+	CREATE TABLE TodRules (
+		TodRuleId INT PRIMARY KEY IDENTITY(1,1),
+		RuleName NVARCHAR(100) NOT NULL,
+		StartTime TIME NOT NULL,
+		EndTime TIME NOT NULL,
+		TariffId INT NOT NULL,
+		SurgeChargePercent DECIMAL(5,2) NOT NULL DEFAULT 0,
+		DiscountPercent DECIMAL(5,2) NOT NULL DEFAULT 0,
+		IsActive BIT NOT NULL DEFAULT 1,
+		CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),
+		CreatedBy NVARCHAR(100) NOT NULL,
+		UpdatedAt DATETIME NULL,
+		UpdatedBy NVARCHAR(100) NULL,
+		FOREIGN KEY (TariffId) REFERENCES Tariffs(TariffId)
+	);
+
+	CREATE TABLE DailyMeterReadings (
+		ReadingId INT PRIMARY KEY IDENTITY(1,1),
+		MeterId INT NOT NULL,
+		ReadingDate DATE NOT NULL,
+		TodRuleId INT NOT NULL,
+		StartTime TIME NOT NULL,
+		EndTime TIME NOT NULL,
+		PreviousReading DECIMAL(18,4) NOT NULL,
+		CurrentReading DECIMAL(18,4) NOT NULL,
+		ConsumptionKwh DECIMAL(18,4) NOT NULL,
+		BaseRate DECIMAL(18,4) NOT NULL,
+		SurgeChargePercent DECIMAL(5,2) NOT NULL,
+		DiscountPercent DECIMAL(5,2) NOT NULL,
+		EffectiveRate DECIMAL(18,4) NOT NULL,
+		Amount DECIMAL(18,4) NOT NULL,
+		RecordedBy NVARCHAR(100) NOT NULL,
+		CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),
+		FOREIGN KEY (MeterId) REFERENCES Meters(MeterId),
+		FOREIGN KEY (TodRuleId) REFERENCES TodRules(TodRuleId)
+	);
+	-- MonthlyBill
+	CREATE TABLE MonthlyBill (
+		BillId INT PRIMARY KEY IDENTITY(1,1),
+		MeterId INT NOT NULL,
+		ConsumerId INT NOT NULL, -- Fixed: was ConsumerID
+		BillingDate DATE NOT NULL,
+		TotalConsumptionKwh DECIMAL(18,4) NOT NULL,
+		TotalAmount DECIMAL(18,4) NOT NULL,
+		BillStatus NVARCHAR(50) NOT NULL,
+		BillingMonth INT NOT NULL,
+		BillingYear INT NOT NULL,
+		CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),
+		FOREIGN KEY (ConsumerId) REFERENCES Consumers(ConsumerId),
+		FOREIGN KEY (MeterId) REFERENCES Meters(MeterId)
+	);
+
+	-- Generate bill for individual consumers
+	CREATE OR ALTER PROCEDURE GenerateBillForMeter
+		@MeterId INT,
+		@BillingMonth INT,
+		@BillingYear INT,
+		@BillGenerated INT OUTPUT
+	AS
+	BEGIN
+		SET NOCOUNT ON;
+    
+		SET @BillGenerated = 0;
+		DECLARE @BillingDate DATE = DATEFROMPARTS(@BillingYear, @BillingMonth, 1);
+    
+		BEGIN TRY
+			BEGIN TRANSACTION;
+        
+			-- Check if meter exists
+			IF NOT EXISTS (SELECT 1 FROM Meters WHERE MeterId = @MeterId)
+			BEGIN
+				THROW 50001, 'Meter not found', 1;
+			END
+        
+			-- CTE to aggregate daily readings for this specific meter and month
+			;WITH MeterMonthlyAggregate AS (
+				SELECT 
+					m.ConsumerId,
+					dmr.MeterId,
+					m.TariffId,
+					@BillingDate AS BillingDate,
+					@BillingMonth AS BillingMonthNum,
+					@BillingYear AS BillingYearNum,
+					SUM(dmr.ConsumptionKwh) AS TotalConsumptionKwh,
+					SUM(dmr.Amount) AS DailyReadingsAmount
+				FROM DailyMeterReadings dmr
+				INNER JOIN Meters m ON dmr.MeterId = m.MeterId
+				WHERE dmr.MeterId = @MeterId
+				  AND MONTH(dmr.ReadingDate) = @BillingMonth 
+				  AND YEAR(dmr.ReadingDate) = @BillingYear
+				GROUP BY m.ConsumerId, dmr.MeterId, m.TariffId
+			),
+			-- CTE to get applicable tariff slabs for the billing date
+			ApplicableTariffSlabs AS (
+				SELECT 
+					ts.TariffID,
+					ts.SlabID,
+					ts.FromKWh,
+					ts.ToKWh,
+					ts.RatePerKWh,
+					ROW_NUMBER() OVER (PARTITION BY ts.TariffID ORDER BY ts.FromKWh) AS SlabOrder
+				FROM TariffSlabs ts
+				WHERE @BillingDate BETWEEN ts.fromDate AND ts.toDate
+			),
+			-- CTE to calculate slab-based billing amounts
+			CalculatedBill AS (
+				SELECT 
+					ma.ConsumerId,
+					ma.MeterId,
+					ma.BillingDate,
+					ma.BillingMonthNum,
+					ma.BillingYearNum,
+					ma.TotalConsumptionKwh,
+					ma.DailyReadingsAmount,
+					ISNULL(
+						(
+							SELECT SUM(SlabAmount)
+							FROM (
+								SELECT 
+									CASE 
+										WHEN ma.TotalConsumptionKwh > ats.ToKWh THEN 
+											(ats.ToKWh - ats.FromKWh) * ats.RatePerKWh
+										WHEN ma.TotalConsumptionKwh > ats.FromKWh AND ma.TotalConsumptionKwh <= ats.ToKWh THEN 
+											(ma.TotalConsumptionKwh - ats.FromKWh) * ats.RatePerKWh
+										ELSE 
+											0
+									END AS SlabAmount
+								FROM ApplicableTariffSlabs ats
+								WHERE ats.TariffID = ma.TariffId
+								  AND ma.TotalConsumptionKwh > ats.FromKWh
+							) AS SlabCalculations
+						),
+						0
+					) AS SlabBasedAmount,
+					ma.DailyReadingsAmount + ISNULL(
+						(
+							SELECT SUM(SlabAmount)
+							FROM (
+								SELECT 
+									CASE 
+										WHEN ma.TotalConsumptionKwh > ats.ToKWh THEN 
+											(ats.ToKWh - ats.FromKWh) * ats.RatePerKWh
+										WHEN ma.TotalConsumptionKwh > ats.FromKWh AND ma.TotalConsumptionKwh <= ats.ToKWh THEN 
+											(ma.TotalConsumptionKwh - ats.FromKWh) * ats.RatePerKWh
+										ELSE 
+											0
+									END AS SlabAmount
+								FROM ApplicableTariffSlabs ats
+								WHERE ats.TariffID = ma.TariffId
+								  AND ma.TotalConsumptionKwh > ats.FromKWh
+							) AS SlabCalculations
+						),
+						0
+					) AS TotalAmount
+				FROM MeterMonthlyAggregate ma
+			)
+			-- Use MERGE to synchronize the MonthlyBill table
+			MERGE INTO MonthlyBill AS Target
+			USING CalculatedBill AS Source
+			ON Target.ConsumerId = Source.ConsumerId 
+			   AND Target.MeterId = Source.MeterId 
+			   AND Target.BillingMonth = Source.BillingMonthNum 
+			   AND Target.BillingYear = Source.BillingYearNum
+			WHEN MATCHED THEN
+				UPDATE SET 
+					Target.TotalConsumptionKwh = Source.TotalConsumptionKwh,
+					Target.TotalAmount = Source.TotalAmount,
+					Target.BillingDate = Source.BillingDate,
+					Target.BillStatus = CASE 
+						WHEN Target.BillStatus = 'Paid' THEN 'Paid'
+						ELSE 'Pending'
+					END
+			WHEN NOT MATCHED BY TARGET THEN
+				INSERT (
+					ConsumerId, MeterId, BillingDate, BillingMonth, BillingYear,
+					TotalConsumptionKwh, TotalAmount, BillStatus, CreatedAt
+				)
+				VALUES (
+					Source.ConsumerId, Source.MeterId, Source.BillingDate, 
+					Source.BillingMonthNum, Source.BillingYearNum, 
+					Source.TotalConsumptionKwh, Source.TotalAmount, 
+					'Pending', GETUTCDATE()
+				);
+        
+			SET @BillGenerated = @@ROWCOUNT;
+        
+			-- Handle case where no data was found
+			IF @BillGenerated = 0
+			BEGIN
+				IF NOT EXISTS (
+					SELECT 1 
+					FROM DailyMeterReadings 
+					WHERE MeterId = @MeterId
+					  AND MONTH(ReadingDate) = @BillingMonth 
+					  AND YEAR(ReadingDate) = @BillingYear
+				)
+				BEGIN
+					THROW 50002, 'No daily readings found for the specified period', 1;
+				END
+            
+				IF NOT EXISTS (
+					SELECT 1 
+					FROM TariffSlabs 
+					WHERE @BillingDate BETWEEN fromDate AND toDate
+				)
+				BEGIN
+					THROW 50003, 'No applicable tariff slabs found', 1;
+				END
+			END
+        
+			COMMIT TRANSACTION;
+        
+			-- Return success result
+			SELECT 
+				@BillGenerated AS BillGenerated, 
+				'Bill generated/updated successfully' AS Message,
+				@BillingMonth AS BillingMonth,
+				@BillingYear AS BillingYear;
+        
+		END TRY
+		BEGIN CATCH
+			IF @@TRANCOUNT > 0
+				ROLLBACK TRANSACTION;
+        
+			THROW;
+		END CATCH;
+	END;
+	GO
+
+	-- Generate bill for all consumers
+
+	CREATE OR ALTER PROCEDURE GenerateMonthlyBillsFromReadings
+		@BillingMonth INT,
+		@BillingYear INT,
+		@BillsAffected INT OUTPUT
+	AS
+	BEGIN
+		SET NOCOUNT ON;
+    
+		SET @BillsAffected = 0;
+		DECLARE @BillingDate DATE = DATEFROMPARTS(@BillingYear, @BillingMonth, 1);
+    
+		BEGIN TRY
+			BEGIN TRANSACTION;
+        
+			-- CTE to aggregate daily readings for the month
+			;WITH MonthlyAggregates AS (
+				SELECT 
+					m.ConsumerId,
+					dmr.MeterId,
+					m.TariffId,
+					@BillingDate AS BillingDate,
+					@BillingMonth AS BillingMonthNum,
+					@BillingYear AS BillingYearNum,
+					SUM(dmr.ConsumptionKwh) AS TotalConsumptionKwh,
+					SUM(dmr.Amount) AS DailyReadingsAmount  -- Sum of daily amounts (TOD + surge + discount)
+				FROM DailyMeterReadings dmr
+				INNER JOIN Meters m ON dmr.MeterId = m.MeterId
+				WHERE MONTH(dmr.ReadingDate) = @BillingMonth 
+				  AND YEAR(dmr.ReadingDate) = @BillingYear
+				GROUP BY m.ConsumerId, dmr.MeterId, m.TariffId
+			),
+			-- CTE to get applicable tariff slabs for the billing date
+			ApplicableTariffSlabs AS (
+				SELECT 
+					ts.TariffID,
+					ts.SlabID,
+					ts.FromKWh,
+					ts.ToKWh,
+					ts.RatePerKWh,
+					ROW_NUMBER() OVER (PARTITION BY ts.TariffID ORDER BY ts.FromKWh) AS SlabOrder
+				FROM TariffSlabs ts
+				WHERE @BillingDate BETWEEN ts.fromDate AND ts.toDate
+			),
+			-- CTE to calculate slab-based billing amounts
+			CalculatedBills AS (
+				SELECT 
+					ma.ConsumerId,
+					ma.MeterId,
+					ma.BillingDate,
+					ma.BillingMonthNum,
+					ma.BillingYearNum,
+					ma.TotalConsumptionKwh,
+					ma.DailyReadingsAmount,
+					ISNULL(
+						(
+							SELECT SUM(SlabAmount)
+							FROM (
+								SELECT 
+									CASE 
+										-- Consumption falls entirely within this slab
+										WHEN ma.TotalConsumptionKwh > ats.ToKWh THEN 
+											(ats.ToKWh - ats.FromKWh) * ats.RatePerKWh
+										-- Consumption falls partially in this slab
+										WHEN ma.TotalConsumptionKwh > ats.FromKWh AND ma.TotalConsumptionKwh <= ats.ToKWh THEN 
+											(ma.TotalConsumptionKwh - ats.FromKWh) * ats.RatePerKWh
+										-- Consumption doesn't reach this slab
+										ELSE 
+											0
+									END AS SlabAmount
+								FROM ApplicableTariffSlabs ats
+								WHERE ats.TariffID = ma.TariffId
+								  AND ma.TotalConsumptionKwh > ats.FromKWh
+							) AS SlabCalculations
+						),
+						0 -- If no slabs apply, slab amount is 0
+					) AS SlabBasedAmount,
+					-- Total Amount = Daily Readings Amount + Slab-Based Amount
+					ma.DailyReadingsAmount + ISNULL(
+						(
+							SELECT SUM(SlabAmount)
+							FROM (
+								SELECT 
+									CASE 
+										WHEN ma.TotalConsumptionKwh > ats.ToKWh THEN 
+											(ats.ToKWh - ats.FromKWh) * ats.RatePerKWh
+										WHEN ma.TotalConsumptionKwh > ats.FromKWh AND ma.TotalConsumptionKwh <= ats.ToKWh THEN 
+											(ma.TotalConsumptionKwh - ats.FromKWh) * ats.RatePerKWh
+										ELSE 
+											0
+									END AS SlabAmount
+								FROM ApplicableTariffSlabs ats
+								WHERE ats.TariffID = ma.TariffId
+								  AND ma.TotalConsumptionKwh > ats.FromKWh
+							) AS SlabCalculations
+						),
+						0
+					) AS TotalAmount
+				FROM MonthlyAggregates ma
+			)
+			-- Use MERGE to synchronize the MonthlyBill table with calculated amounts
+			MERGE INTO MonthlyBill AS Target
+			USING CalculatedBills AS Source
+			ON Target.ConsumerId = Source.ConsumerId 
+			   AND Target.MeterId = Source.MeterId 
+			   AND Target.BillingMonth = Source.BillingMonthNum 
+			   AND Target.BillingYear = Source.BillingYearNum
+			-- When a matching bill is found, update the consumption and amount
+			WHEN MATCHED THEN
+				UPDATE SET 
+					Target.TotalConsumptionKwh = Source.TotalConsumptionKwh,
+					Target.TotalAmount = Source.TotalAmount,
+					Target.BillingDate = Source.BillingDate,
+					Target.BillStatus = 'Pending'
+			-- When no matching bill is found, insert a new row
+			WHEN NOT MATCHED BY TARGET THEN
+				INSERT (
+					ConsumerId, MeterId, BillingDate, BillingMonth, BillingYear,
+					TotalConsumptionKwh, TotalAmount, BillStatus, CreatedAt
+				)
+				VALUES (
+					Source.ConsumerId, Source.MeterId, Source.BillingDate, 
+					Source.BillingMonthNum, Source.BillingYearNum, 
+					Source.TotalConsumptionKwh, Source.TotalAmount, 
+					'Pending', GETUTCDATE()
+				);
+        
+			-- Capture the total number of rows affected by the MERGE operation
+			SET @BillsAffected = @@ROWCOUNT;
+        
+			-- Handle cases where no data was found
+			IF @BillsAffected = 0
+			BEGIN
+				IF NOT EXISTS (
+					SELECT 1 
+					FROM DailyMeterReadings 
+					WHERE MONTH(ReadingDate) = @BillingMonth 
+					  AND YEAR(ReadingDate) = @BillingYear
+				)
+				BEGIN
+					ROLLBACK TRANSACTION;
+					SELECT 
+						0 AS BillsGeneratedOrUpdated, 
+						'No daily meter readings found for the specified month and year' AS Message,
+						@BillingMonth AS BillingMonth,
+						@BillingYear AS BillingYear;
+					RETURN;
+				END
+            
+				-- Check if applicable tariff slabs exist for the billing date
+				IF NOT EXISTS (
+					SELECT 1 
+					FROM TariffSlabs 
+					WHERE @BillingDate BETWEEN fromDate AND toDate
+				)
+				BEGIN
+					ROLLBACK TRANSACTION;
+					SELECT 
+						0 AS BillsGeneratedOrUpdated, 
+						'No applicable tariff slabs found for the billing date' AS Message,
+						@BillingDate AS BillingDate;
+					RETURN;
+				END
+			END
+        
+			COMMIT TRANSACTION;
+        
+			SELECT 
+				@BillsAffected AS BillsGeneratedOrUpdated, 
+				'Monthly bills synchronized successfully with tariff slab pricing applied' AS Message,
+				@BillingMonth AS BillingMonth,
+				@BillingYear AS BillingYear,
+				@BillingDate AS BillingDate;
+        
+		END TRY
+		BEGIN CATCH
+			IF @@TRANCOUNT > 0
+				ROLLBACK TRANSACTION;
+        
+			-- Return error details
+			SELECT 
+				ERROR_NUMBER() AS ErrorNumber,
+				ERROR_MESSAGE() AS ErrorMessage,
+				ERROR_PROCEDURE() AS ErrorProcedure,
+				ERROR_LINE() AS ErrorLine;
+        
+			THROW;
+		END CATCH;
+	END;
+	GO
+
+/*--------------------------DATA-----------------------------*/
+
+-- Roles
+INSERT INTO Roles ( RoleName, Abbreviation) VALUES
+('User', 'US'),
+('Admin', 'AD'),
+('SuperAdmin', 'SA');
+
+-- Zones
+INSERT INTO Zones (ZoneName) VALUES
+('North Zone'),
+('South Zone'),
+('East Zone'),
+('West Zone');
+
+-- Tariffs
+INSERT INTO Tariffs (Name, EffectiveFrom, EffectiveTo, BaseRate, TaxRate) VALUES
+('Residential', '2025-01-01', NULL, 4.00, 0.10),
+('Commercial', '2025-01-01', NULL, 6.50, 0.15),
+('factory', '2025-01-01', NULL, 8.00, 0.20)
+
+-- Insert data into the 'Statuses' table
+INSERT INTO Statuses (Name) VALUES ('Active');
+INSERT INTO Statuses (Name) VALUES ('Inactive');
+INSERT INTO Statuses (Name) VALUES ('Decomissioned');
+
+-- ============================================
+-- 1. SUBSTATIONS (12 rows - 3 per zone)
+-- ============================================
+INSERT INTO Substations (SubstationName, ZoneID) VALUES
+('North Main Substation', 1),
+('North Secondary Substation', 1),
+('North Industrial Substation', 1),
+('South Main Substation', 2),
+('South Residential Substation', 2),
+('South Commercial Substation', 2),
+('East Power Substation', 3),
+('East Grid Substation', 3),
+('East Distribution Substation', 3),
+('West Central Substation', 4),
+('West Urban Substation', 4),
+('West Rural Substation', 4);
+
+-- ============================================
+-- 2. FEEDERS (24 rows - 2 per substation)
+-- ============================================
+INSERT INTO Feeders (FeederName, SubstationID) VALUES
+-- North Zone Feeders
+('Feeder N1-A', 1),
+('Feeder N1-B', 1),
+('Feeder N2-A', 2),
+('Feeder N2-B', 2),
+('Feeder N3-A', 3),
+('Feeder N3-B', 3),
+-- South Zone Feeders
+('Feeder S1-A', 4),
+('Feeder S1-B', 4),
+('Feeder S2-A', 5),
+('Feeder S2-B', 5),
+('Feeder S3-A', 6),
+('Feeder S3-B', 6),
+-- East Zone Feeders
+('Feeder E1-A', 7),
+('Feeder E1-B', 7),
+('Feeder E2-A', 8),
+('Feeder E2-B', 8),
+('Feeder E3-A', 9),
+('Feeder E3-B', 9),
+-- West Zone Feeders
+('Feeder W1-A', 10),
+('Feeder W1-B', 10),
+('Feeder W2-A', 11),
+('Feeder W2-B', 11),
+('Feeder W3-A', 12),
+('Feeder W3-B', 12);
+
+-- ============================================
+-- 3. DTRs (48 rows - 2 per feeder)
+-- ============================================
+INSERT INTO DTRs (DTRName, FeederID) VALUES
+-- Feeders 1-12
+('DTR-N1A-001', 1), ('DTR-N1A-002', 1),
+('DTR-N1B-001', 2), ('DTR-N1B-002', 2),
+('DTR-N2A-001', 3), ('DTR-N2A-002', 3),
+('DTR-N2B-001', 4), ('DTR-N2B-002', 4),
+('DTR-N3A-001', 5), ('DTR-N3A-002', 5),
+('DTR-N3B-001', 6), ('DTR-N3B-002', 6),
+-- Feeders 7-12
+('DTR-S1A-001', 7), ('DTR-S1A-002', 7),
+('DTR-S1B-001', 8), ('DTR-S1B-002', 8),
+('DTR-S2A-001', 9), ('DTR-S2A-002', 9),
+('DTR-S2B-001', 10), ('DTR-S2B-002', 10),
+('DTR-S3A-001', 11), ('DTR-S3A-002', 11),
+('DTR-S3B-001', 12), ('DTR-S3B-002', 12),
+-- Feeders 13-18
+('DTR-E1A-001', 13), ('DTR-E1A-002', 13),
+('DTR-E1B-001', 14), ('DTR-E1B-002', 14),
+('DTR-E2A-001', 15), ('DTR-E2A-002', 15),
+('DTR-E2B-001', 16), ('DTR-E2B-002', 16),
+('DTR-E3A-001', 17), ('DTR-E3A-002', 17),
+('DTR-E3B-001', 18), ('DTR-E3B-002', 18),
+-- Feeders 19-24
+('DTR-W1A-001', 19), ('DTR-W1A-002', 19),
+('DTR-W1B-001', 20), ('DTR-W1B-002', 20),
+('DTR-W2A-001', 21), ('DTR-W2A-002', 21),
+('DTR-W2B-001', 22), ('DTR-W2B-002', 22),
+('DTR-W3A-001', 23), ('DTR-W3A-002', 23),
+('DTR-W3B-001', 24), ('DTR-W3B-002', 24);
+
+-- ============================================
+-- 4. TARIFF SLABS (15 rows)
+-- ============================================
+INSERT INTO TariffSlabs (TariffID, FromKWh, ToKWh, RatePerKWh) VALUES
+-- Residential Tariff Slabs
+(1, 0, 50, 3.50),
+(1, 51, 100, 4.00),
+(1, 101, 200, 4.50),
+(1, 201, 300, 5.00),
+(1, 301, 999999, 5.50),
+-- Commercial Tariff Slabs
+(2, 0, 100, 6.00),
+(2, 101, 500, 6.50),
+(2, 501, 1000, 7.00),
+(2, 1001, 999999, 7.50),
+-- Factory Tariff Slabs
+(3, 0, 500, 7.50),
+(3, 501, 2000, 8.00),
+(3, 2001, 5000, 8.50),
+(3, 5001, 10000, 9.00),
+(3, 10001, 999999, 9.50);
+
+-- ============================================
+-- 5. MANUFACTURERS (10 rows)
+-- ============================================
+INSERT INTO Manufacturers (Name) VALUES 
+('Secure Meters Ltd'),
+('PowerTech Industries'),
+('Smart Grid Systems'),
+('Energy Solutions Inc'),
+('MeterMaster Corp'),
+('ElectroTech Global'),
+('Advanced Metering Co'),
+('Digital Energy Systems'),
+('Precision Meters Inc'),
+('Havells India Ltd');
+
+-- ============================================
+-- 6. CONSUMERS (50 rows - Mix across zones)
+-- ============================================
+INSERT INTO Consumers (Name, Address, Phone, Email, StatusID, CreatedAt, CreatedBy, UpdatedAt, UpdatedBy) VALUES
+-- North Zone Consumers (1-15)
+('Rajesh Kumar', 'House 101, MG Road, North Delhi', '9876543210', 'rajesh.kumar@email.com', 1, '2024-01-15 10:30:00', 'ESAD001', '2024-06-20 14:00:00', 'ESAD001'),
+('Priya Sharma', 'Flat 205, Sector 18, Noida', '9876543211', 'priya.sharma@email.com', 1, '2024-02-10 11:00:00', 'ESAD001', NULL, NULL),
+('Amit Patel', 'Shop 45, Karol Bagh Market', '9876543212', 'amit.patel@email.com', 1, '2024-03-05 09:15:00', 'ESAD002', '2024-07-10 16:30:00', 'ESAD002'),
+('Sunita Reddy', 'Villa 12, North Avenue', '9876543213', 'sunita.reddy@email.com', 1, '2024-04-20 13:45:00', 'ESAD001', NULL, NULL),
+('Vikram Singh', '789 Civil Lines, North Zone', '9876543214', 'vikram.singh@email.com', 1, '2024-05-12 08:20:00', 'ESAD002', '2024-08-15 10:00:00', 'ESAD001'),
+('Meena Iyer', 'Building 3, Mall Road', '9876543215', 'meena.iyer@email.com', 2, '2024-06-08 15:30:00', 'ESAD001', NULL, NULL),
+('Arjun Mehta', 'Office 301, Business Park', '9876543216', 'arjun.mehta@email.com', 1, '2024-07-01 12:00:00', 'ESAD002', '2024-09-05 11:20:00', 'ESAD002'),
+('Kavita Nair', 'Apartment 15B, Model Town', '9876543217', 'kavita.nair@email.com', 1, '2024-08-14 10:45:00', 'ESAD001', NULL, NULL),
+('Ravi Gupta', 'Factory Unit 7, Industrial Area', '9876543218', 'ravi.gupta@email.com', 1, '2024-09-22 14:15:00', 'ESAD002', '2024-10-18 09:30:00', 'ESAD001'),
+('Anjali Desai', 'House 56, Rajouri Garden', '9876543219', 'anjali.desai@email.com', 1, '2024-10-30 16:00:00', 'ESAD001', NULL, NULL),
+('Manoj Tiwari', 'Shop 12, Main Market', '9876543220', 'manoj.tiwari@email.com', 1, '2024-11-01 09:00:00', 'ESAD001', NULL, NULL),
+('Neha Kapoor', 'Flat 402, Green Park', '9876543221', 'neha.kapoor@email.com', 1, '2024-01-20 10:30:00', 'ESAD002', NULL, NULL),
+('Rohit Verma', 'Office 15, Tech Park', '9876543222', 'rohit.verma@email.com', 1, '2024-02-15 11:45:00', 'ESAD001', NULL, NULL),
+('Shalini Mishra', 'House 78, Vasant Vihar', '9876543223', 'shalini.mishra@email.com', 1, '2024-03-10 14:20:00', 'ESAD002', NULL, NULL),
+('Karan Joshi', 'Building 5, Pitampura', '9876543224', 'karan.joshi@email.com', 1, '2024-04-05 16:00:00', 'ESAD001', NULL, NULL),
+
+-- South Zone Consumers (16-30)
+('Deepak Rao', 'House 201, Jayanagar, Bangalore', '9876543225', 'deepak.rao@email.com', 1, '2024-01-10 09:00:00', 'ESAD001', NULL, NULL),
+('Lakshmi Bhat', 'Flat 105, Koramangala', '9876543226', 'lakshmi.bhat@email.com', 1, '2024-02-05 10:15:00', 'ESAD002', NULL, NULL),
+('Suresh Naidu', 'Shop 8, Brigade Road', '9876543227', 'suresh.naidu@email.com', 1, '2024-03-12 11:30:00', 'ESAD001', NULL, NULL),
+('Pooja Hegde', 'Villa 22, Whitefield', '9876543228', 'pooja.hegde@email.com', 1, '2024-04-18 13:00:00', 'ESAD002', NULL, NULL),
+('Arun Kumar', 'Office 501, MG Road', '9876543229', 'arun.kumar@email.com', 1, '2024-05-22 14:30:00', 'ESAD001', NULL, NULL),
+('Divya Shetty', 'Apartment 12C, Indiranagar', '9876543230', 'divya.shetty@email.com', 1, '2024-06-15 15:45:00', 'ESAD002', NULL, NULL),
+('Prakash Reddy', 'Factory 3, Peenya Industrial', '9876543231', 'prakash.reddy@email.com', 1, '2024-07-10 08:00:00', 'ESAD001', NULL, NULL),
+('Ramya Krishnan', 'House 45, HSR Layout', '9876543232', 'ramya.krishnan@email.com', 1, '2024-08-05 09:30:00', 'ESAD002', NULL, NULL),
+('Vinay Gowda', 'Building 7, Electronic City', '9876543233', 'vinay.gowda@email.com', 2, '2024-09-01 10:45:00', 'ESAD001', NULL, NULL),
+('Sowmya Rao', 'Shop 25, Commercial Street', '9876543234', 'sowmya.rao@email.com', 1, '2024-10-12 12:00:00', 'ESAD002', NULL, NULL),
+('Harish Babu', 'Office 202, Residency Road', '9876543235', 'harish.babu@email.com', 1, '2024-11-02 13:15:00', 'ESAD001', NULL, NULL),
+('Nandini Murthy', 'Flat 308, JP Nagar', '9876543236', 'nandini.murthy@email.com', 1, '2024-01-25 14:30:00', 'ESAD002', NULL, NULL),
+('Krishna Murthy', 'House 67, Malleshwaram', '9876543237', 'krishna.murthy@email.com', 1, '2024-02-20 15:45:00', 'ESAD001', NULL, NULL),
+('Preethi Rao', 'Villa 9, Yelahanka', '9876543238', 'preethi.rao@email.com', 1, '2024-03-18 16:00:00', 'ESAD002', NULL, NULL),
+('Manjunath Swamy', 'Factory 12, Bommasandra', '9876543239', 'manjunath.swamy@email.com', 1, '2024-04-22 08:15:00', 'ESAD001', NULL, NULL),
+
+-- East Zone Consumers (31-40)
+('Ranjan Das', 'House 55, Salt Lake, Kolkata', '9876543240', 'ranjan.das@email.com', 1, '2024-01-08 09:00:00', 'ESAD001', NULL, NULL),
+('Moumita Sen', 'Flat 201, Park Street', '9876543241', 'moumita.sen@email.com', 1, '2024-02-12 10:30:00', 'ESAD002', NULL, NULL),
+('Sourav Ghosh', 'Shop 18, New Market', '9876543242', 'sourav.ghosh@email.com', 1, '2024-03-15 11:45:00', 'ESAD001', NULL, NULL),
+('Arpita Banerjee', 'Office 402, Sector V', '9876543243', 'arpita.banerjee@email.com', 1, '2024-04-10 13:00:00', 'ESAD002', NULL, NULL),
+('Debashis Roy', 'Building 8, EM Bypass', '9876543244', 'debashis.roy@email.com', 1, '2024-05-18 14:15:00', 'ESAD001', NULL, NULL),
+('Tanuja Chatterjee', 'Apartment 5D, Ballygunge', '9876543245', 'tanuja.chatterjee@email.com', 1, '2024-06-22 15:30:00', 'ESAD002', NULL, NULL),
+('Amit Dutta', 'Factory 5, Dankuni Industrial', '9876543246', 'amit.dutta@email.com', 1, '2024-07-05 08:45:00', 'ESAD001', NULL, NULL),
+('Shreya Mukherjee', 'House 23, Howrah', '9876543247', 'shreya.mukherjee@email.com', 1, '2024-08-12 10:00:00', 'ESAD002', NULL, NULL),
+('Biswajit Sarkar', 'Shop 34, Gariahat Market', '9876543248', 'biswajit.sarkar@email.com', 1, '2024-09-08 11:15:00', 'ESAD001', NULL, NULL),
+('Anindita Bose', 'Office 601, Rajarhat', '9876543249', 'anindita.bose@email.com', 1, '2024-10-15 12:30:00', 'ESAD002', NULL, NULL),
+
+-- West Zone Consumers (41-50)
+('Nitin Shah', 'House 88, Andheri West, Mumbai', '9876543250', 'nitin.shah@email.com', 1, '2024-01-12 09:15:00', 'ESAD001', NULL, NULL),
+('Swati Joshi', 'Flat 702, Bandra', '9876543251', 'swati.joshi@email.com', 1, '2024-02-18 10:30:00', 'ESAD002', NULL, NULL),
+('Rahul Deshmukh', 'Shop 42, Dadar Market', '9876543252', 'rahul.deshmukh@email.com', 1, '2024-03-20 11:45:00', 'ESAD001', NULL, NULL),
+('Priyanka Kulkarni', 'Office 303, Lower Parel', '9876543253', 'priyanka.kulkarni@email.com', 1, '2024-04-25 13:00:00', 'ESAD002', NULL, NULL),
+('Sachin Patil', 'Building 11, Powai', '9876543254', 'sachin.patil@email.com', 1, '2024-05-30 14:15:00', 'ESAD001', NULL, NULL),
+('Manisha Rane', 'Apartment 9B, Goregaon', '9876543255', 'manisha.rane@email.com', 2, '2024-06-28 15:30:00', 'ESAD002', NULL, NULL),
+('Kiran Naik', 'Factory 8, Thane Industrial', '9876543256', 'kiran.naik@email.com', 1, '2024-07-12 08:45:00', 'ESAD001', NULL, NULL),
+('Vaishali More', 'House 34, Malad', '9876543257', 'vaishali.more@email.com', 1, '2024-08-20 10:00:00', 'ESAD002', NULL, NULL),
+('Aditya Pawar', 'Shop 56, Borivali Market', '9876543258', 'aditya.pawar@email.com', 1, '2024-09-15 11:15:00', 'ESAD001', NULL, NULL),
+('Sneha Bhosale', 'Office 805, BKC', '9876543259', 'sneha.bhosale@email.com', 1, '2024-10-22 12:30:00', 'ESAD002', NULL, NULL);
+
+-- ============================================
+-- 7. USERS (15 rows - Mix of roles)
+-- ============================================
+/*
+INSERT INTO Users (UserID, Username, Email, Phone, PasswordHashed, RoleID, LastLogin, Active) VALUES
+('dede','manjit', 'priya.admin@company.com', '9000012222', 0x5F4DCC3B5AA765D61D8327DEB882CF995F4DCC3B5AA765D61D8327DEB882CF99, 2, '2025-11-02 11:00:00', 1),
+('Super Amit', 'amit.super@company.com', '9000013333', 0x5F4DCC3B5AA765D61D8327DEB882CF995F4DCC3B5AA765D61D8327DEB882CF99, 3, '2025-11-03 12:00:00', 1),
+('Sunita User', 'sunita.user@company.com', '9000014444', 0x5F4DCC3B5AA765D61D8327DEB882CF995F4DCC3B5AA765D61D8327DEB882CF99, 1, '2025-11-04 09:30:00', 1),
+('Vikram Admin', 'vikram.admin@company.com', '9000015555', 0x5F4DCC3B5AA765D61D8327DEB882CF995F4DCC3B5AA765D61D8327DEB882CF99, 2, '2025-11-04 14:00:00', 1),
+('Meena User', 'meena.user@company.com', '9000016666', 0x5F4DCC3B5AA765D61D8327DEB882CF995F4DCC3B5AA765D61D8327DEB882CF99, 1, '2025-10-28 08:00:00', 0),
+('Arjun User', 'arjun.user@company.com', '9000017777', 0x5F4DCC3B5AA765D61D8327DEB882CF995F4DCC3B5AA765D61D8327DEB882CF99, 1, '2025-11-03 16:45:00', 1),
+('Kavita Admin', 'kavita.admin@company.com', '9000018888', 0x5F4DCC3B5AA765D61D8327DEB882CF995F4DCC3B5AA765D61D8327DEB882CF99, 2, '2025-11-04 10:20:00', 1),
+('Deepak User', 'deepak.user@company.com', '9000019999', 0x5F4DCC3B5AA765D61D8327DEB882CF995F4DCC3B5AA765D61D8327DEB882CF99, 1, '2025-11-02 13:30:00', 1),
+('Anjali Super', 'anjali.super@company.com', '9000010000', 0x5F4DCC3B5AA765D61D8327DEB882CF995F4DCC3B5AA765D61D8327DEB882CF99, 3, '2025-11-04 15:00:00', 1),
+('Lakshmi User', 'lakshmi.user@company.com', '9000020001', 0x5F4DCC3B5AA765D61D8327DEB882CF995F4DCC3B5AA765D61D8327DEB882CF99, 1, '2025-11-01 09:00:00', 1),
+('Suresh Admin', 'suresh.admin@company.com', '9000020002', 0x5F4DCC3B5AA765D61D8327DEB882CF995F4DCC3B5AA765D61D8327DEB882CF99, 2, '2025-11-03 11:30:00', 1),
+('Pooja User', 'pooja.user@company.com', '9000020003', 0x5F4DCC3B5AA765D61D8327DEB882CF995F4DCC3B5AA765D61D8327DEB882CF99, 1, '2025-11-04 08:15:00', 1),
+('Nitin Admin', 'nitin.admin@company.com', '9000020004', 0x5F4DCC3B5AA765D61D8327DEB882CF995F4DCC3B5AA765D61D8327DEB882CF99, 2, '2025-11-02 14:45:00', 1),
+('Swati User', 'swati.user@company.com', '9000020005', 0x5F4DCC3B5AA765D61D8327DEB882CF995F4DCC3B5AA765D61D8327DEB882CF99, 1, '2025-11-01 16:20:00', 1);
+*/
+-- select * from users
+-- ============================================
+-- 8. METERS 
+-- ============================================
+INSERT INTO Meters (ConsumerID, DTRID, IPAddress, ICCID, IMSI, ManufacturerID, Firmware, TariffID, InstallDate, StatusID, LatestReading) VALUES
+-- North Zone Meters (Consumers 1-15)
+(1, 1, '192.168.1.101', '8991101200003204501', '404451234567801', 1, 'v2.3.1', 1, '2024-01-20', 1, 145.50),
+(2, 2, '192.168.1.102', '8991101200003204502', '404451234567802', 2, 'v2.3.2', 1, '2024-02-15', 1, 189.75),
+(3, 3, '192.168.1.103', '8991101200003204503', '404451234567803', 3, 'v2.4.0', 2, '2024-03-10', 1, 520.30),
+(4, 4, '192.168.1.104', '8991101200003204504', '404451234567804', 4, 'v2.3.1', 1, '2024-04-25', 1, 167.90),
+(5, 5, '192.168.1.105', '8991101200003204505', '404451234567805', 5, 'v2.4.1', 1, '2024-05-18', 1, 234.60),
+(6, 6, '192.168.1.106', '8991101200003204506', '404451234567806', 6, 'v2.3.0', 2, '2024-06-12', 2, 0.00),
+(7, 7, '192.168.1.107', '8991101200003204507', '404451234567807', 7, 'v2.4.2', 2, '2024-07-05', 1, 680.45),
+(8, 8, '192.168.1.108', '8991101200003204508', '404451234567808', 8, 'v2.3.3', 1, '2024-08-20', 1, 156.80),
+(9, 9, '192.168.1.109', '8991101200003204509', '404451234567809', 9, 'v2.4.0', 3, '2024-09-28', 1, 2450.00),
+(10, 10, '192.168.1.110', '8991101200003204510', '404451234567810', 10, 'v2.3.1', 1, '2024-11-01', 1, 198.25),
+(11, 11, '192.168.1.111', '8991101200003204511', '404451234567811', 1, 'v2.3.2', 2, '2024-01-22', 1, 445.70),
+(12, 12, '192.168.1.112', '8991101200003204512', '404451234567812', 2, 'v2.4.0', 1, '2024-02-18', 1, 175.40),
+(13, 13, '192.168.1.113', '8991101200003204513', '404451234567813', 3, 'v2.3.1', 2, '2024-03-12', 1, 590.80),
+(14, 14, '192.168.1.114', '8991101200003204514', '404451234567814', 4, 'v2.4.1', 1, '2024-04-08', 1, 212.50),
+(15, 15, '192.168.1.115', '8991101200003204515', '404451234567815', 5, 'v2.3.0', 1, '2024-04-10', 1, 187.90),
+
+-- South Zone Meters (Consumers 16-30)
+(16, 13, '192.168.2.101', '8991101200003204516', '404451234567816', 6, 'v2.4.2', 1, '2024-01-12', 1, 165.30),
+(17, 14, '192.168.2.102', '8991101200003204517', '404451234567817', 7, 'v2.3.3', 1, '2024-02-08', 1, 201.45),
+(18, 15, '192.168.2.103', '8991101200003204518', '404451234567818', 8, 'v2.4.0', 2, '2024-03-15', 1, 475.80),
+(19, 16, '192.168.2.104', '8991101200003204519', '404451234567819', 9, 'v2.3.1', 1, '2024-04-20', 1, 189.60),
+(20, 17, '192.168.2.105', '8991101200003204520', '404451234567820', 10, 'v2.4.1', 2, '2024-05-25', 1, 635.90);
+
+
+-- Assuming valid records exist in the 'Meters' and 'Consumers' tables with IDs 1-4 and 101-104 respectively.
+
+INSERT INTO MonthlyBill (MeterId,ConsumerID,BillingDate,TotalConsumptionKwh,TotalAmount,BillStatus) VALUES
+-- --- Data for Meter 1, Consumer 101 (3 months) ---
+(1, 1, '2025-09-01', 120.00, 1100.00, 'Paid'),
+(1, 1, '2025-10-01', 135.50, 1240.75, 'Paid'),
+(1, 1, '2025-11-01', 142.00, 1300.00, 'Unpaid'),
+-- --- Data for Meter 2, Consumer 102 (3 months) ---
+(2, 2, '2025-09-10', 210.00, 1950.00, 'Paid'),
+(2, 2, '2025-10-10', 230.75, 2100.25, 'Pending'),
+(2, 2, '2025-11-10', 245.00, 2250.00, 'Unpaid'),
+-- --- Data for Meter 3, Consumer 103 (3 months) ---
+(3, 3, '2025-09-15', 85.50, 750.00, 'Paid'),
+(3, 3, '2025-10-15', 92.00, 810.00, 'Paid'),
+(3, 3, '2025-11-15', 110.00, 980.50, 'Pending');
+
